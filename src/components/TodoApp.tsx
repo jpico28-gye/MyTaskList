@@ -65,7 +65,6 @@ export default function TodoApp() {
   const [sortMode,    setSortMode]    = useState<SortMode>('manual')
   const [activeTags,  setActiveTags]  = useState<string[]>([])
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
-  const [mounted,     setMounted]     = useState(false)
   const [activeId,    setActiveId]    = useState<string | null>(null)
 
   // new-task extras
@@ -79,8 +78,6 @@ export default function TodoApp() {
 
   const { dark, toggle: toggleDark } = useDarkMode()
   const { permission, requestPermission } = useNotifications(todos)
-
-  useEffect(() => { setMounted(true) }, [])
 
   // ── NLP: parse the input in real-time ─────────────────────────────────────
 
@@ -194,7 +191,7 @@ export default function TodoApp() {
 
   // ── auth loading / gate ───────────────────────────────────────────────────
 
-  if (!mounted || auth.loading) {
+  if (auth.loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -484,7 +481,7 @@ export default function TodoApp() {
           <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
               <AnimatePresence initial={false} mode="popLayout">
-                {!loading && filtered.length === 0 && (
+                {filtered.length === 0 && (
                   <motion.li key="empty" className="list-none">
                     <EmptyState variant={emptyVariant()} />
                   </motion.li>

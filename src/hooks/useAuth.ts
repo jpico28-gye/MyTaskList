@@ -28,34 +28,31 @@ export function useAuth(): AuthState {
         setUser(user)
       }
     } catch {
-      // If the allowlist check fails (network issue etc.), sign out to be safe
       await supabase.auth.signOut()
       setUser(null)
     }
   }
 
   useEffect(() => {
-    let cancelled = false
-
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (cancelled) return
-      try {
-        await checkAndSetUser(data.session?.user ?? null)
-      } finally {
-        // Always clear the loading state so the UI never stays stuck
-        if (!cancelled) setLoading(false)
+    // onAuthStateChange fires INITIAL_SESSION on mount — use it as the
+    // single source of truth so we don't have a getSession() race condition.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        try {
+          await checkAndSetUser(session?.user ?? null)
+        } finally {
+          setLoading(false)
+        }
       }
-    })
+    )
 
-    // Keep in sync with Supabase auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      await checkAndSetUser(session?.user ?? null)
-      setLoading(false)
-    })
+    // Safety net: if the auth event never fires (e.g. Supabase unreachable),
+    // clear the loading spinner after 5 seconds so the user isn't stuck.
+    const timeout = setTimeout(() => setLoading(false), 5000)
 
     return () => {
-      cancelled = true
       subscription.unsubscribe()
+      clearTimeout(timeout)
     }
   }, [])
 
