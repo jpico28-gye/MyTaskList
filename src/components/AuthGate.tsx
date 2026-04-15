@@ -26,14 +26,12 @@ export default function AuthGate({ auth }: AuthGateProps) {
     setSuccess(null)
     setBusy(true)
 
-    // For sign-up, check the allowlist before creating the account
-    if (mode === 'signup') {
-      const { data: allowed } = await supabase.rpc('is_email_allowed', { check_email: email })
-      if (!allowed) {
-        setBusy(false)
-        setError('This email is not approved to sign up. Please contact the administrator.')
-        return
-      }
+    // Check the allowlist for both sign-in and sign-up
+    const { data: allowed } = await supabase.rpc('is_email_allowed', { check_email: email })
+    if (!allowed) {
+      setBusy(false)
+      setError('This email is not approved. Please contact the administrator.')
+      return
     }
 
     const err = mode === 'signin'

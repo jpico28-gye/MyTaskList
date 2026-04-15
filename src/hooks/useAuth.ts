@@ -17,16 +17,27 @@ export function useAuth(): AuthState {
   const [user,    setUser]    = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  async function checkAndSetUser(user: User | null) {
+    if (!user) { setUser(null); return }
+    const { data: allowed } = await supabase.rpc('is_email_allowed', { check_email: user.email })
+    if (!allowed) {
+      await supabase.auth.signOut()
+      setUser(null)
+    } else {
+      setUser(user)
+    }
+  }
+
   useEffect(() => {
-    // Hydrate from existing session
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
+    // Hydrate from existing session — boot it if email is not on the allowlist
+    supabase.auth.getSession().then(async ({ data }) => {
+      await checkAndSetUser(data.session?.user ?? null)
       setLoading(false)
     })
 
     // Keep in sync with Supabase auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      await checkAndSetUser(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
