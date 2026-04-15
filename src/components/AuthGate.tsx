@@ -26,27 +26,31 @@ export default function AuthGate({ auth }: AuthGateProps) {
     setSuccess(null)
     setBusy(true)
 
-    // Check the allowlist for both sign-in and sign-up
-    const { data: allowed } = await supabase.rpc('is_email_allowed', { check_email: email })
-    if (!allowed) {
+    try {
+      // Check the allowlist for both sign-in and sign-up
+      const { data: allowed, error: rpcError } = await supabase.rpc('is_email_allowed', { check_email: email })
+      if (rpcError) throw rpcError
+      if (!allowed) {
+        setError('This email is not approved. Please contact the administrator.')
+        return
+      }
+
+      const err = mode === 'signin'
+        ? await auth.signIn(email, password)
+        : await auth.signUp(email, password)
+
+      if (err) {
+        setError(err.message)
+      } else if (mode === 'signup') {
+        setSuccess('Account created! Check your email to confirm, then sign in.')
+        setMode('signin')
+      }
+      // On sign-in success, useAuth updates the user state and AuthGate unmounts.
+    } catch {
+      setError('Something went wrong. Please check your connection and try again.')
+    } finally {
       setBusy(false)
-      setError('This email is not approved. Please contact the administrator.')
-      return
     }
-
-    const err = mode === 'signin'
-      ? await auth.signIn(email, password)
-      : await auth.signUp(email, password)
-
-    setBusy(false)
-
-    if (err) {
-      setError(err.message)
-    } else if (mode === 'signup') {
-      setSuccess('Account created! Check your email to confirm, then sign in.')
-      setMode('signin')
-    }
-    // On sign-in success, useAuth updates the user state and AuthGate unmounts.
   }
 
   return (
