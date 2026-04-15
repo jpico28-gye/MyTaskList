@@ -6,6 +6,7 @@ import { Loader2, Mail, Lock, LogIn, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { AuthState } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 type AuthGateProps = {
   auth: AuthState
@@ -24,6 +25,16 @@ export default function AuthGate({ auth }: AuthGateProps) {
     setError(null)
     setSuccess(null)
     setBusy(true)
+
+    // For sign-up, check the allowlist before creating the account
+    if (mode === 'signup') {
+      const { data: allowed } = await supabase.rpc('is_email_allowed', { check_email: email })
+      if (!allowed) {
+        setBusy(false)
+        setError('This email is not approved to sign up. Please contact the administrator.')
+        return
+      }
+    }
 
     const err = mode === 'signin'
       ? await auth.signIn(email, password)
