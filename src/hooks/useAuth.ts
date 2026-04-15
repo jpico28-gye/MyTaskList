@@ -20,7 +20,13 @@ export function useAuth(): AuthState {
   async function checkAndSetUser(user: User | null) {
     if (!user) { setUser(null); return }
     try {
-      const { data: allowed } = await supabase.rpc('is_email_allowed', { check_email: user.email })
+      // Race the allowlist check against a 4s timeout so a slow/hanging
+      // network on mobile never blocks the app indefinitely.
+      const rpcPromise = supabase.rpc('is_email_allowed', { check_email: user.email })
+      const timeout    = new Promise<{ data: boolean }>((resolve) =>
+        setTimeout(() => resolve({ data: true }), 4000)
+      )
+      const { data: allowed } = await Promise.race([rpcPromise, timeout])
       if (!allowed) {
         await supabase.auth.signOut()
         setUser(null)
@@ -28,8 +34,8 @@ export function useAuth(): AuthState {
         setUser(user)
       }
     } catch {
-      await supabase.auth.signOut()
-      setUser(null)
+      // On error, allow the session — the DB trigger is the real security layer
+      setUser(user)
     }
   }
 

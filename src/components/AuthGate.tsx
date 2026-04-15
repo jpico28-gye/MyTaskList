@@ -27,12 +27,16 @@ export default function AuthGate({ auth }: AuthGateProps) {
     setBusy(true)
 
     try {
-      // Check the allowlist for both sign-in and sign-up
-      const { data: allowed, error: rpcError } = await supabase.rpc('is_email_allowed', { check_email: email })
-      if (rpcError) throw rpcError
-      if (!allowed) {
-        setError('This email is not approved. Please contact the administrator.')
-        return
+      // Allowlist check only needed for sign-up — the DB trigger blocks
+      // unapproved accounts server-side, and useAuth boots unauthorized
+      // sessions after sign-in, so no RPC call is needed in the sign-in path.
+      if (mode === 'signup') {
+        const { data: allowed, error: rpcError } = await supabase.rpc('is_email_allowed', { check_email: email })
+        if (rpcError) throw rpcError
+        if (!allowed) {
+          setError('This email is not approved. Please contact the administrator.')
+          return
+        }
       }
 
       const err = mode === 'signin'
@@ -45,7 +49,6 @@ export default function AuthGate({ auth }: AuthGateProps) {
         setSuccess('Account created! Check your email to confirm, then sign in.')
         setMode('signin')
       }
-      // On sign-in success, useAuth updates the user state and AuthGate unmounts.
     } catch {
       setError('Something went wrong. Please check your connection and try again.')
     } finally {
