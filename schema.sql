@@ -71,7 +71,25 @@ create policy "delete own task comments"
   on public.task_comments for delete
   using (auth.uid() = user_id);
 
--- 6. Bulk reorder helper — called after drag-and-drop
+-- 6. Push subscriptions — one row per browser/device per user
+create table if not exists public.push_subscriptions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  endpoint   text not null,
+  p256dh     text not null,
+  auth       text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, endpoint)
+);
+
+alter table public.push_subscriptions enable row level security;
+
+create policy "manage own push subscriptions"
+  on public.push_subscriptions
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- 7. Bulk reorder helper — called after drag-and-drop
 --    Accepts an array of {id, sort_order} JSON objects and applies them
 --    in a single round-trip.
 create or replace function public.reorder_todos(updates jsonb)

@@ -77,7 +77,7 @@ export default function TodoApp() {
   const [reminderOpen,    setReminderOpen]    = useState(false)
 
   const { dark, toggle: toggleDark } = useDarkMode()
-  const { permission, requestPermission } = useNotifications(todos)
+  const { permission, requestPermission } = useNotifications(todos, auth.user?.id ?? null)
 
   // ── NLP: parse the input in real-time ─────────────────────────────────────
 
