@@ -159,7 +159,7 @@ export function useTodos(user: User | null) {
 
   const updateSchedule = useCallback(async (id: string, dueDate: string | null, dueTime: string | null) => {
     setTodos((prev) => prev.map((t) => t.id === id ? { ...t, dueDate, dueTime } : t))
-    await supabase.from('todos').update({ due_date: dueDate, due_time: dueTime }).eq('id', id)
+    await supabase.from('todos').update({ due_date: dueDate, due_time: dueTime, reminder_sent: false }).eq('id', id)
   }, [])
 
   // ── change reminder ────────────────────────────────────────────────────────
