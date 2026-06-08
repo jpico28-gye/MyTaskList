@@ -17,6 +17,12 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "My Tasks",
   description: "A clean, high-performance to-do list app",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "My Tasks",
+  },
 };
 
 export default function RootLayout({
@@ -31,6 +37,8 @@ export default function RootLayout({
     >
       {/* Inline script prevents dark-mode flash before React hydrates */}
       <head>
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <script dangerouslySetInnerHTML={{ __html: `
           try {
             var s = localStorage.getItem('todo-dark-mode');
