@@ -56,7 +56,7 @@ export default function TodoApp() {
   const auth  = useAuth()
   const {
     todos, loading,
-    addTodo, toggleTodo, deleteTodo, editTodo, changePriority, changeReminder, removeTag, clearCompleted, reorderTodos,
+    addTodo, toggleTodo, deleteTodo, editTodo, changePriority, changeReminder, updateSchedule, removeTag, updateTags, assignTodo, clearCompleted, reorderTodos,
   } = useTodos(auth.user)
 
   const [input,       setInput]       = useState('')
@@ -104,11 +104,12 @@ export default function TodoApp() {
 
     addTodo({
       text,
-      priority:  pendingPriority,
-      dueDate:   resolvedDate ? toDateStr(resolvedDate) : null,
-      dueTime:   resolvedTime,
-      reminder:  pendingReminder,
-      tags:      mergedTags,
+      priority:   pendingPriority,
+      dueDate:    resolvedDate ? toDateStr(resolvedDate) : null,
+      dueTime:    resolvedTime,
+      reminder:   pendingReminder,
+      tags:       mergedTags,
+      assignedTo: null,
     })
 
     setInput('')
@@ -487,10 +488,12 @@ export default function TodoApp() {
                   </motion.li>
                 )}
                 {filtered.map((todo) => (
-                  <TodoItem key={todo.id} todo={todo}
+                  <TodoItem key={todo.id} todo={todo} allTags={allTags}
+                    userId={auth.user?.id ?? null}
                     onToggle={toggleTodo} onDelete={deleteTodo} onEdit={editTodo}
                     onChangePriority={changePriority} onChangeReminder={changeReminder}
-                    onRemoveTag={removeTag} isDraggable={isDraggable} />
+                    onUpdateSchedule={updateSchedule} onRemoveTag={removeTag}
+                    onUpdateTags={updateTags} onAssign={assignTodo} isDraggable={isDraggable} />
                 ))}
               </AnimatePresence>
             </ul>

@@ -55,22 +55,32 @@ import type { ReminderMinutes } from '@/lib/reminders'
 
 type CalendarViewProps = {
   todos: Todo[]
+  allTags: string[]
+  userId: string | null
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (id: string, text: string) => void
   onChangePriority: (id: string, priority: Priority | null) => void
   onChangeReminder: (id: string, reminder: ReminderMinutes) => void
   onRemoveTag: (id: string, tag: string) => void
+  onUpdateTags: (id: string, tags: string[]) => void
+  onUpdateSchedule: (id: string, dueDate: string | null, dueTime: string | null) => void
+  onAssign: (id: string, assignedTo: string | null) => void
 }
 
 export default function CalendarView({
   todos,
+  allTags,
+  userId,
   onToggle,
   onDelete,
   onEdit,
   onChangePriority,
   onChangeReminder,
   onRemoveTag,
+  onUpdateTags,
+  onUpdateSchedule,
+  onAssign,
 }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
 
@@ -152,12 +162,17 @@ export default function CalendarView({
                 <TodoItem
                   key={todo.id}
                   todo={todo}
+                  allTags={allTags}
+                  userId={userId}
                   onToggle={onToggle}
                   onDelete={onDelete}
                   onEdit={onEdit}
                   onChangePriority={onChangePriority}
                   onChangeReminder={onChangeReminder}
+                  onUpdateSchedule={onUpdateSchedule}
                   onRemoveTag={onRemoveTag}
+                  onUpdateTags={onUpdateTags}
+                  onAssign={onAssign}
                 />
               ))}
             </AnimatePresence>
@@ -177,12 +192,17 @@ export default function CalendarView({
                 <TodoItem
                   key={todo.id}
                   todo={todo}
+                  allTags={allTags}
+                  userId={userId}
                   onToggle={onToggle}
                   onDelete={onDelete}
                   onEdit={onEdit}
                   onChangePriority={onChangePriority}
                   onChangeReminder={onChangeReminder}
+                  onUpdateSchedule={onUpdateSchedule}
                   onRemoveTag={onRemoveTag}
+                  onUpdateTags={onUpdateTags}
+                  onAssign={onAssign}
                 />
               ))}
             </AnimatePresence>

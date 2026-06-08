@@ -2,17 +2,20 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Trash2, Check, X, CalendarDays, GripVertical, Bell, BellOff } from 'lucide-react'
+import { Pencil, Trash2, Check, X, CalendarDays, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2 } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { format, isPast, isToday, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import TagPicker from '@/components/TagPicker'
 import { cn } from '@/lib/utils'
 import { tagColorClass } from '@/lib/tags'
 import { formatTime } from '@/lib/nlp'
 import { REMINDER_OPTIONS, type ReminderMinutes } from '@/lib/reminders'
+import { useComments } from '@/hooks/useComments'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +31,7 @@ export type Todo = {
   dueTime: string | null   // "HH:MM" 24-h, optional
   reminder: number | null  // minutes before due; null = no reminder
   tags: string[]
+  assignedTo: string | null
 }
 
 export const PRIORITY_CONFIG: Record<
@@ -79,7 +83,7 @@ const PARTICLES = Array.from({ length: 14 }, (_, i) => {
 function ConfettiBurst({ show }: { show: boolean }) {
   if (!show) return null
   return (
-    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+    <div className="pointer-events-none absolute left-1/2 top-8 -translate-x-1/2 -translate-y-1/2">
       {PARTICLES.map((p, i) => (
         <motion.div
           key={i}
@@ -98,29 +102,47 @@ function ConfettiBurst({ show }: { show: boolean }) {
 
 type TodoItemProps = {
   todo: Todo
+  allTags: string[]
+  userId: string | null
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (id: string, text: string) => void
   onChangePriority: (id: string, priority: Priority | null) => void
   onRemoveTag: (id: string, tag: string) => void
+  onUpdateTags: (id: string, tags: string[]) => void
+  onUpdateSchedule: (id: string, dueDate: string | null, dueTime: string | null) => void
   onChangeReminder: (id: string, reminder: ReminderMinutes) => void
+  onAssign: (id: string, assignedTo: string | null) => void
   isDraggable?: boolean
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export default function TodoItem({
   todo,
+  allTags,
+  userId,
   onToggle,
   onDelete,
   onEdit,
   onChangePriority,
   onRemoveTag,
+  onUpdateTags,
+  onUpdateSchedule,
   onChangeReminder,
+  onAssign,
   isDraggable = false,
 }: TodoItemProps) {
-  const [isEditing,     setIsEditing]     = useState(false)
-  const [editValue,     setEditValue]     = useState(todo.text)
-  const [showConfetti,  setShowConfetti]  = useState(false)
-  const [reminderOpen,  setReminderOpen]  = useState(false)
+  const [isEditing,      setIsEditing]      = useState(false)
+  const [editValue,      setEditValue]      = useState(todo.text)
+  const [showConfetti,   setShowConfetti]   = useState(false)
+  const [reminderOpen,   setReminderOpen]   = useState(false)
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [commentsOpen,   setCommentsOpen]   = useState(false)
+  const [commentInput,   setCommentInput]   = useState('')
+  const [assignInput,    setAssignInput]    = useState(todo.assignedTo ?? '')
   const prevCompleted = useRef(todo.completed)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -128,6 +150,9 @@ export default function TodoItem({
     useSortable({ id: todo.id, disabled: !isDraggable })
 
   const dndStyle = { transform: CSS.Transform.toString(transform), transition }
+
+  const { comments, loading: commentsLoading, addComment, deleteComment } =
+    useComments(todo.id, commentsOpen, userId)
 
   useEffect(() => {
     if (!prevCompleted.current && todo.completed) {
@@ -140,15 +165,30 @@ export default function TodoItem({
 
   useEffect(() => { if (isEditing) { inputRef.current?.focus(); inputRef.current?.select() } }, [isEditing])
   useEffect(() => { setEditValue(todo.text) }, [todo.text])
+  useEffect(() => { setAssignInput(todo.assignedTo ?? '') }, [todo.assignedTo])
 
   function commitEdit() {
     const trimmed = editValue.trim()
     if (trimmed && trimmed !== todo.text) onEdit(todo.id, trimmed)
     else setEditValue(todo.text)
+
+    const newAssign = assignInput.trim() || null
+    if (newAssign !== todo.assignedTo) onAssign(todo.id, newAssign)
+
     setIsEditing(false)
   }
 
-  function cancelEdit() { setEditValue(todo.text); setIsEditing(false) }
+  function cancelEdit() {
+    setEditValue(todo.text)
+    setAssignInput(todo.assignedTo ?? '')
+    setIsEditing(false)
+  }
+
+  function handleInputBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const li = e.currentTarget.closest('li')
+    if (li?.contains(e.relatedTarget as Node | null)) return
+    commitEdit()
+  }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') commitEdit()
@@ -158,6 +198,13 @@ export default function TodoItem({
   function cyclePriority() {
     if (!todo.priority) onChangePriority(todo.id, 'low')
     else onChangePriority(todo.id, PRIORITY_CONFIG[todo.priority].next)
+  }
+
+  async function handleAddComment() {
+    const text = commentInput.trim()
+    if (!text) return
+    setCommentInput('')
+    await addComment(text)
   }
 
   const cfg = todo.priority ? PRIORITY_CONFIG[todo.priority] : null
@@ -182,8 +229,8 @@ export default function TodoItem({
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
       className={cn(
-        'group relative flex items-center gap-3 rounded-xl border border-border shadow-sm',
-        'border-l-4 pl-2 pr-4 py-3 transition-colors duration-300',
+        'group relative flex flex-col rounded-xl border border-border shadow-sm',
+        'border-l-4 transition-colors duration-300',
         cfg ? cfg.border : 'border-l-border',
         cfg ? cfg.cardBg : 'bg-card',
         todo.completed && 'opacity-70',
@@ -192,139 +239,297 @@ export default function TodoItem({
     >
       <ConfettiBurst show={showConfetti} />
 
-      {isDraggable && (
-        <button {...listeners} aria-label="Drag to reorder"
-          className="touch-none cursor-grab active:cursor-grabbing shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100">
-          <GripVertical className="h-4 w-4" />
-        </button>
-      )}
+      {/* ── Main task row ── */}
+      <div className="flex items-center gap-3 pl-2 pr-4 py-3">
+        {isDraggable && (
+          <button {...listeners} aria-label="Drag to reorder"
+            className="touch-none cursor-grab active:cursor-grabbing shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100">
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
 
-      <button onClick={cyclePriority}
-        aria-label={`Priority: ${todo.priority ?? 'none'}. Click to cycle.`}
-        title={`Priority: ${todo.priority ?? 'none'} — click to change`}
-        className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-110',
-          cfg ? cfg.dot : 'border border-dashed border-muted-foreground/40 bg-transparent')} />
+        <button onClick={cyclePriority}
+          aria-label={`Priority: ${todo.priority ?? 'none'}. Click to cycle.`}
+          title={`Priority: ${todo.priority ?? 'none'} — click to change`}
+          className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-110',
+            cfg ? cfg.dot : 'border border-dashed border-muted-foreground/40 bg-transparent')} />
 
-      <motion.button onClick={() => onToggle(todo.id)}
-        aria-label={todo.completed ? 'Mark incomplete' : 'Mark complete'}
-        whileTap={{ scale: 0.85 }}
-        className={cn('relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200',
-          todo.completed ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 hover:border-primary')}>
-        <AnimatePresence>
-          {todo.completed && (
-            <motion.span initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-              <Check className="h-3 w-3" strokeWidth={3} />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.button>
-
-      {isEditing ? (
-        <div className="flex flex-1 items-center gap-2">
-          <Input ref={inputRef} value={editValue} onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={handleKeyDown} onBlur={commitEdit} className="h-8 flex-1 text-sm" />
-          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={commitEdit} aria-label="Save">
-            <Check className="h-4 w-4 text-primary" />
-          </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={cancelEdit} aria-label="Cancel">
-            <X className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-1 flex-col gap-1 min-w-0">
-            <span className="relative inline-block">
-              <span className={cn('break-words text-sm leading-snug transition-colors duration-300',
-                todo.completed ? 'text-muted-foreground' : 'text-foreground')}
-                onDoubleClick={() => !todo.completed && setIsEditing(true)}>
-                {todo.text}
-              </span>
-              <AnimatePresence>
-                {todo.completed && (
-                  <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} exit={{ scaleX: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="pointer-events-none absolute left-0 top-[52%] h-[1.5px] w-full origin-left -translate-y-1/2 rounded-full bg-muted-foreground/50" />
-                )}
-              </AnimatePresence>
-            </span>
-
-            {(todo.tags.length > 0 || dueDateLabel || (todo.reminder !== null && todo.reminder !== undefined)) && (
-              <div className="flex flex-wrap items-center gap-1">
-                {todo.tags.map((tag) => (
-                  <span key={tag}
-                    className={cn('group/tag inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[10px] font-medium cursor-pointer select-none', tagColorClass(tag))}
-                    onClick={() => onRemoveTag(todo.id, tag)} title={`Remove #${tag}`}>
-                    #{tag}
-                    <X className="h-2 w-2 opacity-0 group-hover/tag:opacity-100 transition-opacity" />
-                  </span>
-                ))}
-
-                {dueDateLabel && (
-                  <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[10px] font-medium',
-                    dueDateLabel.overdue ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
-                    <CalendarDays className="h-2.5 w-2.5" />
-                    {dueDateLabel.text}
-                  </span>
-                )}
-
-                {todo.reminder !== null && todo.reminder !== undefined && todo.dueDate && !todo.completed && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-1.5 py-0 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-                    <Bell className="h-2.5 w-2.5" />
-                    {todo.reminder === 0 ? 'On time' : todo.reminder === 60 ? '1h' : todo.reminder === 1440 ? '1d' : `${todo.reminder}m`}
-                  </span>
-                )}
-              </div>
+        <motion.button onClick={() => onToggle(todo.id)}
+          aria-label={todo.completed ? 'Mark incomplete' : 'Mark complete'}
+          whileTap={{ scale: 0.85 }}
+          className={cn('relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200',
+            todo.completed ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 hover:border-primary')}>
+          <AnimatePresence>
+            {todo.completed && (
+              <motion.span initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </motion.span>
             )}
-          </div>
+          </AnimatePresence>
+        </motion.button>
 
-          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-            {!todo.completed && todo.dueDate && (
-              <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
+        {isEditing ? (
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Input ref={inputRef} value={editValue} onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown} onBlur={handleInputBlur} className="h-8 flex-1 text-sm" />
+              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={commitEdit} aria-label="Save">
+                <Check className="h-4 w-4 text-primary" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={cancelEdit} aria-label="Cancel">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <TagPicker
+                existingTags={allTags}
+                selected={todo.tags}
+                onChange={(tags) => onUpdateTags(todo.id, tags)}
+              />
+              {/* Date picker */}
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger
-                  className={cn(
-                    'flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent',
-                    todo.reminder !== null
-                      ? 'text-violet-500 dark:text-violet-400'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                  aria-label="Set reminder"
-                >
-                  {todo.reminder !== null
-                    ? <Bell className="h-3.5 w-3.5" />
-                    : <BellOff className="h-3.5 w-3.5" />}
+                  className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
+                    todo.dueDate ? 'border-transparent bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground/50')}>
+                  <CalendarDays className="h-3 w-3" />
+                  {todo.dueDate ? format(parseISO(todo.dueDate), 'MMM d') : 'Due date'}
                 </PopoverTrigger>
-                <PopoverContent className="w-44 p-1.5" align="end">
-                  <div className="space-y-0.5">
-                    {REMINDER_OPTIONS.map((opt) => (
-                      <button
-                        key={String(opt.value)}
-                        onClick={() => { onChangeReminder(todo.id, opt.value as ReminderMinutes); setReminderOpen(false) }}
-                        className={cn(
-                          'w-full rounded-lg px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted',
-                          todo.reminder === opt.value && 'bg-muted font-medium'
-                        )}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single"
+                    selected={todo.dueDate ? parseISO(todo.dueDate) : undefined}
+                    onSelect={(d) => {
+                      onUpdateSchedule(todo.id, d ? toDateStr(d) : null, d ? todo.dueTime : null)
+                      setDatePickerOpen(false)
+                    }}
+                    initialFocus />
                 </PopoverContent>
               </Popover>
-            )}
-            {!todo.completed && (
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => setIsEditing(true)} aria-label="Edit task">
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => onDelete(todo.id)} aria-label="Delete task">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+              {todo.dueDate && (
+                <button onClick={() => onUpdateSchedule(todo.id, null, null)}
+                  className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+              {todo.dueDate && (
+                <input
+                  type="time"
+                  value={todo.dueTime?.slice(0, 5) ?? ''}
+                  onChange={(e) => onUpdateSchedule(todo.id, todo.dueDate, e.target.value || null)}
+                  className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] text-muted-foreground focus:border-primary/50 focus:outline-none"
+                />
+              )}
+              {todo.dueDate && (
+                <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
+                  <PopoverTrigger
+                    className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
+                      todo.reminder !== null ? 'border-transparent bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : 'border-border text-muted-foreground hover:border-muted-foreground/50')}>
+                    <Bell className="h-3 w-3" />
+                    {todo.reminder !== null ? REMINDER_OPTIONS.find((o) => o.value === todo.reminder)?.label ?? 'Remind' : 'Remind'}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-44 p-1.5" align="start">
+                    <div className="space-y-0.5">
+                      {REMINDER_OPTIONS.map((opt) => (
+                        <button key={String(opt.value)} onClick={() => { onChangeReminder(todo.id, opt.value as ReminderMinutes); setReminderOpen(false) }}
+                          className={cn('w-full rounded-lg px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted',
+                            todo.reminder === opt.value && 'bg-muted font-medium')}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+            {/* Assign to */}
+            <div className="flex items-center gap-1.5">
+              <User className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <input
+                value={assignInput}
+                onChange={(e) => setAssignInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') cancelEdit() }}
+                placeholder="Assign to…"
+                className="h-6 flex-1 rounded-full border border-border bg-background px-2.5 text-[11px] text-muted-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:outline-none"
+              />
+            </div>
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <div className="flex flex-1 flex-col gap-1 min-w-0">
+              <span className="relative inline-block">
+                <span className={cn('break-words text-sm leading-snug transition-colors duration-300',
+                  todo.completed ? 'text-muted-foreground' : 'text-foreground')}
+                  onDoubleClick={() => !todo.completed && setIsEditing(true)}>
+                  {todo.text}
+                </span>
+                <AnimatePresence>
+                  {todo.completed && (
+                    <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} exit={{ scaleX: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="pointer-events-none absolute left-0 top-[52%] h-[1.5px] w-full origin-left -translate-y-1/2 rounded-full bg-muted-foreground/50" />
+                  )}
+                </AnimatePresence>
+              </span>
+
+              {(todo.tags.length > 0 || dueDateLabel || (todo.reminder !== null && todo.reminder !== undefined) || todo.assignedTo) && (
+                <div className="flex flex-wrap items-center gap-1">
+                  {todo.tags.map((tag) => (
+                    <span key={tag}
+                      className={cn('group/tag inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[10px] font-medium cursor-pointer select-none', tagColorClass(tag))}
+                      onClick={() => onRemoveTag(todo.id, tag)} title={`Remove #${tag}`}>
+                      #{tag}
+                      <X className="h-2 w-2 opacity-0 group-hover/tag:opacity-100 transition-opacity" />
+                    </span>
+                  ))}
+
+                  {dueDateLabel && (
+                    <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[10px] font-medium',
+                      dueDateLabel.overdue ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
+                      <CalendarDays className="h-2.5 w-2.5" />
+                      {dueDateLabel.text}
+                    </span>
+                  )}
+
+                  {todo.reminder !== null && todo.reminder !== undefined && todo.dueDate && !todo.completed && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-1.5 py-0 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                      <Bell className="h-2.5 w-2.5" />
+                      {todo.reminder === 0 ? 'On time' : todo.reminder === 60 ? '1h' : todo.reminder === 1440 ? '1d' : `${todo.reminder}m`}
+                    </span>
+                  )}
+
+                  {todo.assignedTo && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      <User className="h-2.5 w-2.5" />
+                      {todo.assignedTo}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+              {!todo.completed && todo.dueDate && (
+                <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
+                  <PopoverTrigger
+                    className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent',
+                      todo.reminder !== null
+                        ? 'text-violet-500 dark:text-violet-400'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                    aria-label="Set reminder"
+                  >
+                    {todo.reminder !== null
+                      ? <Bell className="h-3.5 w-3.5" />
+                      : <BellOff className="h-3.5 w-3.5" />}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-44 p-1.5" align="end">
+                    <div className="space-y-0.5">
+                      {REMINDER_OPTIONS.map((opt) => (
+                        <button
+                          key={String(opt.value)}
+                          onClick={() => { onChangeReminder(todo.id, opt.value as ReminderMinutes); setReminderOpen(false) }}
+                          className={cn(
+                            'w-full rounded-lg px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted',
+                            todo.reminder === opt.value && 'bg-muted font-medium'
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <button
+                onClick={() => setCommentsOpen((o) => !o)}
+                aria-label="Toggle comments"
+                className={cn(
+                  'flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent',
+                  commentsOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+              </button>
+              {!todo.completed && (
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsEditing(true)} aria-label="Edit task">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => onDelete(todo.id)} aria-label="Delete task">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Comments panel ── */}
+      <AnimatePresence>
+        {commentsOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="overflow-hidden border-t border-border/50"
+          >
+            <div className="space-y-2 px-4 py-3">
+              {commentsLoading ? (
+                <div className="flex items-center justify-center py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  {comments.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">No comments yet.</p>
+                  )}
+                  <div className="space-y-1.5">
+                    {comments.map((c) => (
+                      <div key={c.id} className="group/comment flex items-start gap-2">
+                        <div className="flex-1 rounded-lg bg-muted/60 px-2.5 py-1.5">
+                          <p className="text-xs text-foreground">{c.text}</p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
+                            {format(new Date(c.createdAt), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => deleteComment(c.id)}
+                          className="mt-1.5 opacity-0 transition-opacity group-hover/comment:opacity-100 text-muted-foreground hover:text-destructive"
+                          aria-label="Delete comment"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="flex items-center gap-2">
+                <Input
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment() }}
+                  placeholder="Add a comment…"
+                  className="h-7 flex-1 rounded-lg text-xs"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary"
+                  onClick={handleAddComment}
+                  disabled={!commentInput.trim()}
+                  aria-label="Submit comment"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.li>
   )
 }

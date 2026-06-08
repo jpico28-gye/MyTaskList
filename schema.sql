@@ -43,6 +43,37 @@ create policy "delete own todos"
 -- 3. Bulk reorder helper — called after drag-and-drop
 --    Accepts an array of {id, sort_order} JSON objects and applies them
 --    in a single round-trip.
+-- 4. assigned_to column on todos
+alter table public.todos add column if not exists assigned_to text;
+
+-- 5. Task comments
+create table if not exists public.task_comments (
+  id         uuid primary key default gen_random_uuid(),
+  todo_id    uuid not null references public.todos(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  text       text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists task_comments_todo_id_idx on public.task_comments (todo_id, created_at);
+
+alter table public.task_comments enable row level security;
+
+create policy "select own task comments"
+  on public.task_comments for select
+  using (auth.uid() = user_id);
+
+create policy "insert own task comments"
+  on public.task_comments for insert
+  with check (auth.uid() = user_id);
+
+create policy "delete own task comments"
+  on public.task_comments for delete
+  using (auth.uid() = user_id);
+
+-- 6. Bulk reorder helper — called after drag-and-drop
+--    Accepts an array of {id, sort_order} JSON objects and applies them
+--    in a single round-trip.
 create or replace function public.reorder_todos(updates jsonb)
 returns void
 language plpgsql

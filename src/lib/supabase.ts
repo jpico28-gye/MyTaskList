@@ -34,4 +34,13 @@ export type TodoRow = {
   reminder:    number | null   // minutes before due
   tags:        string[]
   sort_order:  number
+  assigned_to: string | null
+}
+
+export type CommentRow = {
+  id:         string
+  todo_id:    string
+  user_id:    string
+  text:       string
+  created_at: string
 }

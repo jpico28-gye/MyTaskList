@@ -10,15 +10,16 @@ import type { ReminderMinutes } from '@/lib/reminders'
 
 function rowToTodo(row: TodoRow): Todo {
   return {
-    id:        row.id,
-    text:      row.text,
-    completed: row.completed,
-    createdAt: new Date(row.created_at).getTime(),
-    priority:  row.priority,
-    dueDate:   row.due_date,
-    dueTime:   row.due_time,
-    reminder:  row.reminder,
-    tags:      row.tags ?? [],
+    id:         row.id,
+    text:       row.text,
+    completed:  row.completed,
+    createdAt:  new Date(row.created_at).getTime(),
+    priority:   row.priority,
+    dueDate:    row.due_date,
+    dueTime:    row.due_time,
+    reminder:   row.reminder,
+    tags:       row.tags ?? [],
+    assignedTo: row.assigned_to,
   }
 }
 
@@ -65,15 +66,16 @@ export function useTodos(user: User | null) {
     const { data, error } = await supabase
       .from('todos')
       .insert({
-        user_id:    user.id,
-        text:       input.text,
-        completed:  false,
-        priority:   input.priority,
-        due_date:   input.dueDate,
-        due_time:   input.dueTime,
-        reminder:   input.reminder,
-        tags:       input.tags,
-        sort_order: 0,              // new items go to the top
+        user_id:     user.id,
+        text:        input.text,
+        completed:   false,
+        priority:    input.priority,
+        due_date:    input.dueDate,
+        due_time:    input.dueTime,
+        reminder:    input.reminder,
+        tags:        input.tags,
+        sort_order:  0,
+        assigned_to: input.assignedTo ?? null,
       })
       .select('*')
       .single()
@@ -90,20 +92,21 @@ export function useTodos(user: User | null) {
   // ── toggle ─────────────────────────────────────────────────────────────────
 
   const toggleTodo = useCallback(async (id: string) => {
-    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, completed: !t.completed } : t))
+    const current = todos.find((t) => t.id === id)
+    if (!current) return
 
-    const todo = (await supabase.from('todos').select('completed').eq('id', id).single()).data
-    if (!todo) return
+    const newCompleted = !current.completed
+    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, completed: newCompleted } : t))
 
     const { error } = await supabase
       .from('todos')
-      .update({ completed: !todo.completed })
+      .update({ completed: newCompleted })
       .eq('id', id)
 
     if (error) {
-      setTodos((prev) => prev.map((t) => t.id === id ? { ...t, completed: !t.completed } : t))
+      setTodos((prev) => prev.map((t) => t.id === id ? { ...t, completed: current.completed } : t))
     }
-  }, [])
+  }, [todos])
 
   // ── delete ─────────────────────────────────────────────────────────────────
 
@@ -138,13 +141,25 @@ export function useTodos(user: User | null) {
   // ── remove tag ─────────────────────────────────────────────────────────────
 
   const removeTag = useCallback(async (id: string, tag: string) => {
-    setTodos((prev) =>
-      prev.map((t) => t.id === id ? { ...t, tags: t.tags.filter((g) => g !== tag) } : t)
-    )
-    const { data } = await supabase.from('todos').select('tags').eq('id', id).single()
-    if (!data) return
-    const newTags = (data.tags as string[]).filter((g: string) => g !== tag)
+    const current = todos.find((t) => t.id === id)
+    if (!current) return
+    const newTags = current.tags.filter((g) => g !== tag)
+    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, tags: newTags } : t))
     await supabase.from('todos').update({ tags: newTags }).eq('id', id)
+  }, [todos])
+
+  // ── update tags ────────────────────────────────────────────────────────────
+
+  const updateTags = useCallback(async (id: string, tags: string[]) => {
+    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, tags } : t))
+    await supabase.from('todos').update({ tags }).eq('id', id)
+  }, [])
+
+  // ── update schedule (due date + time) ─────────────────────────────────────
+
+  const updateSchedule = useCallback(async (id: string, dueDate: string | null, dueTime: string | null) => {
+    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, dueDate, dueTime } : t))
+    await supabase.from('todos').update({ due_date: dueDate, due_time: dueTime }).eq('id', id)
   }, [])
 
   // ── change reminder ────────────────────────────────────────────────────────
@@ -153,6 +168,13 @@ export function useTodos(user: User | null) {
     setTodos((prev) => prev.map((t) => t.id === id ? { ...t, reminder } : t))
     // reminder_sent resets so the email fires again at the new time
     await supabase.from('todos').update({ reminder, reminder_sent: false }).eq('id', id)
+  }, [])
+
+  // ── assign to ─────────────────────────────────────────────────────────────
+
+  const assignTodo = useCallback(async (id: string, assignedTo: string | null) => {
+    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, assignedTo } : t))
+    await supabase.from('todos').update({ assigned_to: assignedTo }).eq('id', id)
   }, [])
 
   // ── clear completed ────────────────────────────────────────────────────────
@@ -186,7 +208,10 @@ export function useTodos(user: User | null) {
     editTodo,
     changePriority,
     changeReminder,
+    updateSchedule,
     removeTag,
+    updateTags,
+    assignTodo,
     clearCompleted,
     reorderTodos,
   }
