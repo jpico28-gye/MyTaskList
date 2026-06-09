@@ -170,11 +170,12 @@ export async function GET(req: NextRequest) {
     const expoTokens = userId ? (expoTokensByUser[userId] ?? []) : []
     if (expoTokens.length > 0) {
       const expoMessages = expoTokens.map((token) => ({
-        to:    token,
-        title: 'Task Reminder — My Tasks',
-        body:  `"${r.text}" is due ${whenLabel}.`,
-        data:  { todoId: r.id },
-        sound: 'default' as const,
+        to:        token,
+        title:     'Task Reminder — My Tasks',
+        body:      `"${r.text}" is due ${whenLabel}.`,
+        data:      { todoId: r.id },
+        sound:     'default' as const,
+        channelId: 'reminders',
       }))
       try {
         await fetch('https://exp.host/--/api/v2/push/send', {
