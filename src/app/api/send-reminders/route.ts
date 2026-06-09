@@ -19,6 +19,12 @@ type PushSubRow = {
   auth:     string
 }
 
+type ExpoTokenRow = {
+  id:      string
+  user_id: string
+  token:   string
+}
+
 webpush.setVapidDetails(
   `mailto:${process.env.VAPID_EMAIL}`,
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
@@ -65,6 +71,16 @@ export async function GET(req: NextRequest) {
   const subsByUser: Record<string, PushSubRow[]> = {}
   for (const sub of (pushSubs ?? []) as PushSubRow[]) {
     ;(subsByUser[sub.user_id] ??= []).push(sub)
+  }
+
+  const { data: expoTokenRows } = await supabase
+    .from('expo_push_tokens')
+    .select('*')
+    .in('user_id', userIds)
+
+  const expoTokensByUser: Record<string, string[]> = {}
+  for (const row of (expoTokenRows ?? []) as ExpoTokenRow[]) {
+    ;(expoTokensByUser[row.user_id] ??= []).push(row.token)
   }
 
   const resendKey = process.env.RESEND_API_KEY!
@@ -147,6 +163,27 @@ export async function GET(req: NextRequest) {
         } else {
           console.error('Push failed for sub', sub.id, err)
         }
+      }
+    }
+
+    // ── Expo Push ──────────────────────────────────────────────────────────
+    const expoTokens = userId ? (expoTokensByUser[userId] ?? []) : []
+    if (expoTokens.length > 0) {
+      const expoMessages = expoTokens.map((token) => ({
+        to:    token,
+        title: 'Task Reminder — My Tasks',
+        body:  `"${r.text}" is due ${whenLabel}.`,
+        data:  { todoId: r.id },
+        sound: 'default' as const,
+      }))
+      try {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body:    JSON.stringify(expoMessages),
+        })
+      } catch (err) {
+        console.error('Expo push failed for user', userId, err)
       }
     }
   }
