@@ -178,11 +178,13 @@ export async function GET(req: NextRequest) {
         channelId: 'reminders',
       }))
       try {
-        await fetch('https://exp.host/--/api/v2/push/send', {
+        const expoRes  = await fetch('https://exp.host/--/api/v2/push/send', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body:    JSON.stringify(expoMessages),
         })
+        const expoBody = await expoRes.json()
+        console.log('Expo push response:', JSON.stringify(expoBody))
       } catch (err) {
         console.error('Expo push failed for user', userId, err)
       }
