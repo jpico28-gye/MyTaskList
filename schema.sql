@@ -109,3 +109,53 @@ begin
   end loop;
 end;
 $$;
+
+-- 8. Notes
+create table if not exists public.notes (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  title      text not null default '',
+  text       text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists notes_user_id_idx on public.notes (user_id, updated_at desc);
+
+alter table public.notes enable row level security;
+
+create policy "select own notes"
+  on public.notes for select
+  using (auth.uid() = user_id);
+
+create policy "insert own notes"
+  on public.notes for insert
+  with check (auth.uid() = user_id);
+
+create policy "update own notes"
+  on public.notes for update
+  using (auth.uid() = user_id);
+
+create policy "delete own notes"
+  on public.notes for delete
+  using (auth.uid() = user_id);
+
+-- 9. Note <-> Task links (many-to-many)
+create table if not exists public.note_links (
+  id         uuid primary key default gen_random_uuid(),
+  note_id    uuid not null references public.notes(id) on delete cascade,
+  todo_id    uuid not null references public.todos(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (note_id, todo_id)
+);
+
+create index if not exists note_links_note_id_idx on public.note_links (note_id);
+create index if not exists note_links_todo_id_idx on public.note_links (todo_id);
+
+alter table public.note_links enable row level security;
+
+create policy "manage own note links"
+  on public.note_links
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

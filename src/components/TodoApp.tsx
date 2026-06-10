@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   PlusCircle, CalendarDays, X, ArrowUpDown, GripVertical,
-  Moon, Sun, Bell, BellOff, Sparkles, Search, LogOut, Loader2,
+  Moon, Sun, Bell, BellOff, Sparkles, Search, LogOut, Loader2, StickyNote, ClipboardList,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import {
@@ -22,6 +22,7 @@ import WeekView from '@/components/WeekView'
 import EmptyState, { type EmptyVariant } from '@/components/EmptyState'
 import TagPicker from '@/components/TagPicker'
 import AuthGate from '@/components/AuthGate'
+import NotesView from '@/components/NotesView'
 import { cn } from '@/lib/utils'
 import { tagColorClass, parseTagsFromText } from '@/lib/tags'
 import { parseNaturalInput, toTimeStr, formatTime } from '@/lib/nlp'
@@ -29,11 +30,13 @@ import { useDarkMode } from '@/hooks/useDarkMode'
 import { useNotifications, REMINDER_OPTIONS, type ReminderMinutes } from '@/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 import { useTodos } from '@/hooks/useTodos'
+import { useNotes } from '@/hooks/useNotes'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
 type Filter   = 'all' | 'active' | 'completed'
 type SortMode = 'manual' | 'smart'
+type View     = 'tasks' | 'notes'
 
 const PRIORITY_WEIGHT: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
@@ -58,6 +61,10 @@ export default function TodoApp() {
     todos, loading,
     addTodo, toggleTodo, deleteTodo, editTodo, changePriority, changeReminder, updateSchedule, removeTag, updateTags, assignTodo, clearCompleted, reorderTodos,
   } = useTodos(auth.user)
+  const {
+    notes, links: noteLinks,
+    addNote, updateNote, deleteNote, linkTodo, unlinkTodo,
+  } = useNotes(auth.user)
 
   const [input,       setInput]       = useState('')
   const [search,      setSearch]      = useState('')
@@ -66,6 +73,8 @@ export default function TodoApp() {
   const [activeTags,  setActiveTags]  = useState<string[]>([])
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [activeId,    setActiveId]    = useState<string | null>(null)
+  const [view,        setView]        = useState<View>('tasks')
+  const [noteFilterTodoId, setNoteFilterTodoId] = useState<string | null>(null)
 
   // new-task extras
   const [pendingPriority, setPendingPriority] = useState<Priority | null>(null)
@@ -141,6 +150,19 @@ export default function TodoApp() {
     todos.forEach((t) => t.tags.forEach((g) => set.add(g)))
     return [...set].sort()
   }, [todos])
+
+  const noteCountByTodoId = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const todoIds of Object.values(noteLinks)) {
+      for (const id of todoIds) counts[id] = (counts[id] ?? 0) + 1
+    }
+    return counts
+  }, [noteLinks])
+
+  const handleViewNotesForTodo = useCallback((todoId: string) => {
+    setNoteFilterTodoId(todoId)
+    setView('notes')
+  }, [])
 
   const toggleActiveTag = (tag: string) =>
     setActiveTags((p) => p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag])
@@ -260,6 +282,39 @@ export default function TodoApp() {
 
       <div className="w-full max-w-lg space-y-4">
 
+        {/* ── View switcher: Tasks / Notes ── */}
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+          <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+            <TabsList className="grid w-full grid-cols-2 rounded-xl">
+              <TabsTrigger value="tasks" className="rounded-lg text-xs sm:text-sm">
+                <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
+                Tasks
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="rounded-lg text-xs sm:text-sm">
+                <StickyNote className="mr-1.5 h-3.5 w-3.5" />
+                Notes
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </motion.div>
+
+        {view === 'notes' && (
+          <NotesView
+            notes={notes}
+            links={noteLinks}
+            todos={todos}
+            filterTodoId={noteFilterTodoId}
+            onClearFilter={() => setNoteFilterTodoId(null)}
+            addNote={addNote}
+            updateNote={updateNote}
+            deleteNote={deleteNote}
+            linkTodo={linkTodo}
+            unlinkTodo={unlinkTodo}
+          />
+        )}
+
+        {view === 'tasks' && (
+        <>
         {/* ── Week view ── */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }}>
           <WeekView todos={todos} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
@@ -493,7 +548,8 @@ export default function TodoApp() {
                     onToggle={toggleTodo} onDelete={deleteTodo} onEdit={editTodo}
                     onChangePriority={changePriority} onChangeReminder={changeReminder}
                     onUpdateSchedule={updateSchedule} onRemoveTag={removeTag}
-                    onUpdateTags={updateTags} onAssign={assignTodo} isDraggable={isDraggable} />
+                    onUpdateTags={updateTags} onAssign={assignTodo} isDraggable={isDraggable}
+                    noteCount={noteCountByTodoId[todo.id] ?? 0} onViewNotes={handleViewNotesForTodo} />
                 ))}
               </AnimatePresence>
             </ul>
@@ -522,6 +578,8 @@ export default function TodoApp() {
             </motion.div>
           )}
         </AnimatePresence>
+        </>
+        )}
       </div>
     </div>
   )

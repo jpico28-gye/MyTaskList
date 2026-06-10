@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Trash2, Check, X, CalendarDays, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Check, X, CalendarDays, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2, StickyNote } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { format, isPast, isToday, parseISO } from 'date-fns'
@@ -114,6 +114,8 @@ type TodoItemProps = {
   onChangeReminder: (id: string, reminder: ReminderMinutes) => void
   onAssign: (id: string, assignedTo: string | null) => void
   isDraggable?: boolean
+  noteCount?: number
+  onViewNotes?: (id: string) => void
 }
 
 function toDateStr(d: Date): string {
@@ -134,6 +136,8 @@ export default function TodoItem({
   onChangeReminder,
   onAssign,
   isDraggable = false,
+  noteCount = 0,
+  onViewNotes,
 }: TodoItemProps) {
   const [isEditing,      setIsEditing]      = useState(false)
   const [editValue,      setEditValue]      = useState(todo.text)
@@ -440,6 +444,17 @@ export default function TodoItem({
                     </div>
                   </PopoverContent>
                 </Popover>
+              )}
+              {noteCount > 0 && (
+                <button
+                  onClick={() => onViewNotes?.(todo.id)}
+                  aria-label={`View ${noteCount} linked note${noteCount !== 1 ? 's' : ''}`}
+                  title={`${noteCount} linked note${noteCount !== 1 ? 's' : ''}`}
+                  className="flex h-7 items-center gap-0.5 rounded-md px-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <StickyNote className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-semibold">{noteCount}</span>
+                </button>
               )}
               <button
                 onClick={() => setCommentsOpen((o) => !o)}

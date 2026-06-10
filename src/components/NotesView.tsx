@@ -1,0 +1,171 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { PlusCircle, Search, X, ListTodo } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import NoteItem from '@/components/NoteItem'
+import EmptyState from '@/components/EmptyState'
+import type { Note } from '@/hooks/useNotes'
+import type { Todo } from '@/components/TodoItem'
+
+type NotesViewProps = {
+  notes: Note[]
+  links: Record<string, string[]>
+  todos: Todo[]
+  filterTodoId: string | null
+  onClearFilter: () => void
+  addNote: (title: string, text: string) => void
+  updateNote: (id: string, fields: { title?: string; text?: string }) => void
+  deleteNote: (id: string) => void
+  linkTodo: (noteId: string, todoId: string) => void
+  unlinkTodo: (noteId: string, todoId: string) => void
+}
+
+export default function NotesView({
+  notes, links, todos, filterTodoId, onClearFilter,
+  addNote, updateNote, deleteNote, linkTodo, unlinkTodo,
+}: NotesViewProps) {
+  const [newTitle, setNewTitle] = useState('')
+  const [newText,  setNewText]  = useState('')
+  const [search,   setSearch]   = useState('')
+
+  const filterTodo = filterTodoId ? todos.find((t) => t.id === filterTodoId) ?? null : null
+
+  function handleToggleLink(noteId: string, todoId: string) {
+    const linked = links[noteId]?.includes(todoId)
+    if (linked) unlinkTodo(noteId, todoId)
+    else linkTodo(noteId, todoId)
+  }
+
+  function handleAddNote() {
+    const text = newText.trim()
+    const title = newTitle.trim()
+    if (!text && !title) return
+    addNote(title, text)
+    setNewTitle('')
+    setNewText('')
+  }
+
+  const filtered = useMemo(() => {
+    let result = notes
+
+    if (filterTodoId) {
+      result = result.filter((n) => links[n.id]?.includes(filterTodoId))
+    }
+
+    const q = search.trim().toLowerCase()
+    if (q) {
+      result = result.filter((n) => n.title.toLowerCase().includes(q) || n.text.toLowerCase().includes(q))
+    }
+
+    return result
+  }, [notes, links, filterTodoId, search])
+
+  function emptyVariant() {
+    if (search.trim() || filterTodoId) return 'no-note-match' as const
+    return 'no-notes' as const
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* ── New note card ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }}
+        className="rounded-2xl border border-border bg-card p-3 shadow-sm space-y-2"
+      >
+        <Input
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          placeholder="Title (optional)"
+          className="h-9 rounded-xl text-sm font-medium"
+          aria-label="New note title"
+        />
+        <textarea
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote() }}
+          placeholder="Write a note…"
+          rows={3}
+          className="w-full resize-none rounded-xl border border-border bg-background p-2.5 text-sm leading-snug text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+          aria-label="New note text"
+        />
+        <div className="flex justify-end">
+          <Button onClick={handleAddNote} disabled={!newTitle.trim() && !newText.trim()} className="h-9 rounded-xl px-4">
+            <PlusCircle className="mr-1.5 h-4 w-4" />
+            Add note
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* ── Search bar ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
+        className="relative"
+      >
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search notes…"
+          className="h-10 rounded-xl pl-9 pr-9 text-sm"
+          aria-label="Search notes"
+        />
+        <AnimatePresence>
+          {search && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}
+              transition={{ duration: 0.12 }}
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+              className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* ── Task filter chip ── */}
+      <AnimatePresence>
+        {filterTodo && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }} className="overflow-hidden"
+          >
+            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary w-fit">
+              <ListTodo className="h-3 w-3 shrink-0" />
+              <span className="truncate max-w-[16rem]">Showing notes for: {filterTodo.text}</span>
+              <button onClick={onClearFilter} aria-label="Clear task filter" className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Notes list ── */}
+      <ul className="space-y-2">
+        <AnimatePresence initial={false} mode="popLayout">
+          {filtered.length === 0 && (
+            <motion.li key="empty" className="list-none">
+              <EmptyState variant={emptyVariant()} />
+            </motion.li>
+          )}
+          {filtered.map((note) => (
+            <NoteItem
+              key={note.id}
+              note={note}
+              allTodos={todos}
+              linkedIds={links[note.id] ?? []}
+              onUpdate={updateNote}
+              onDelete={deleteNote}
+              onToggleLink={handleToggleLink}
+            />
+          ))}
+        </AnimatePresence>
+      </ul>
+    </div>
+  )
+}

@@ -44,3 +44,20 @@ export type CommentRow = {
   text:       string
   created_at: string
 }
+
+export type NoteRow = {
+  id:         string
+  user_id:    string
+  title:      string
+  text:       string
+  created_at: string
+  updated_at: string
+}
+
+export type NoteLinkRow = {
+  id:         string
+  note_id:    string
+  todo_id:    string
+  user_id:    string
+  created_at: string
+}

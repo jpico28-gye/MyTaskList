@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Inbox, CheckCircle2, PartyPopper, Tag, ClipboardList } from 'lucide-react'
+import { Inbox, CheckCircle2, PartyPopper, Tag, ClipboardList, StickyNote, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type EmptyVariant =
@@ -10,6 +10,8 @@ export type EmptyVariant =
   | 'no-active'      // active filter, nothing remaining
   | 'no-completed'   // completed filter, nothing finished yet
   | 'no-tag-match'   // tag filter returned nothing
+  | 'no-notes'       // notes list is empty
+  | 'no-note-match'  // note search/filter returned nothing
 
 const CONFIG: Record<
   EmptyVariant,
@@ -44,6 +46,18 @@ const CONFIG: Record<
     iconClass: 'text-muted-foreground/30',
     title: 'No matching tasks',
     body: 'Try a different tag or clear the filter.',
+  },
+  'no-notes': {
+    Icon: StickyNote,
+    iconClass: 'text-muted-foreground/30',
+    title: 'No notes yet',
+    body: 'Add your first note above to get started.',
+  },
+  'no-note-match': {
+    Icon: Search,
+    iconClass: 'text-muted-foreground/30',
+    title: 'No matching notes',
+    body: 'Try a different search or clear the filter.',
   },
 }
 
