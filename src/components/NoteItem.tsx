@@ -108,8 +108,9 @@ export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete
         onChange={(e) => setText(e.target.value)}
         onBlur={commitText}
         placeholder="Write a note…"
+        title="Click to edit note"
         rows={2}
-        className="w-full resize-none break-words rounded-lg border-none bg-transparent text-sm leading-snug text-foreground outline-none placeholder:text-muted-foreground/50"
+        className="w-full cursor-text resize-none break-words rounded-lg border border-transparent bg-transparent px-1.5 py-1 text-sm leading-snug text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 hover:bg-muted/40 focus:border-primary/40 focus:bg-background focus:ring-1 focus:ring-primary/20"
       />
 
       {/* ── Linked tasks ── */}
