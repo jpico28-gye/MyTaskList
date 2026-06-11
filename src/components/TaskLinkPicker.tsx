@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Link2, X, Check, ListTodo } from 'lucide-react'
+import { Link2, X, Check, ListTodo, PlusCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { Todo } from '@/components/TodoItem'
@@ -13,12 +13,15 @@ type TaskLinkPickerProps = {
   /** Ids of tasks currently linked to this note. */
   linkedIds: string[]
   onToggle: (todoId: string) => void
+  /** Create a new task with this text and link it to the note. */
+  onCreateTask?: (text: string) => Promise<void>
 }
 
-export default function TaskLinkPicker({ allTodos, linkedIds, onToggle }: TaskLinkPickerProps) {
-  const [open, setOpen]   = useState(false)
-  const [query, setQuery] = useState('')
-  const inputRef          = useRef<HTMLInputElement>(null)
+export default function TaskLinkPicker({ allTodos, linkedIds, onToggle, onCreateTask }: TaskLinkPickerProps) {
+  const [open, setOpen]       = useState(false)
+  const [query, setQuery]     = useState('')
+  const [creating, setCreating] = useState(false)
+  const inputRef              = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
@@ -29,6 +32,19 @@ export default function TaskLinkPicker({ allTodos, linkedIds, onToggle }: TaskLi
 
   const q = query.trim().toLowerCase()
   const candidates = allTodos.filter((t) => t.text.toLowerCase().includes(q))
+  const exactMatch = allTodos.some((t) => t.text.toLowerCase() === q)
+
+  async function handleCreateTask() {
+    const text = query.trim()
+    if (!text || !onCreateTask || creating) return
+    setCreating(true)
+    try {
+      await onCreateTask(text)
+      setQuery('')
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -79,7 +95,8 @@ export default function TaskLinkPicker({ allTodos, linkedIds, onToggle }: TaskLi
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tasks…"
+              placeholder={onCreateTask ? 'Search or create a task…' : 'Search tasks…'}
+              onKeyDown={(e) => { if (e.key === 'Enter' && q && candidates.length === 0) handleCreateTask() }}
               className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
             />
           </div>
@@ -106,6 +123,20 @@ export default function TaskLinkPicker({ allTodos, linkedIds, onToggle }: TaskLi
             <p className="px-2 py-2 text-center text-xs text-muted-foreground">
               {q ? 'No matching tasks.' : 'No tasks yet.'}
             </p>
+          )}
+
+          {/* Create-on-the-fly */}
+          {onCreateTask && q && !exactMatch && (
+            <button
+              onClick={handleCreateTask}
+              disabled={creating}
+              className="flex w-full items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-left text-xs text-primary transition-colors hover:bg-primary/5 disabled:opacity-50"
+            >
+              <PlusCircle className="h-3 w-3 shrink-0" />
+              <span className="truncate">
+                {creating ? 'Creating…' : `Create task "${query.trim()}"`}
+              </span>
+            </button>
           )}
         </PopoverContent>
       </Popover>

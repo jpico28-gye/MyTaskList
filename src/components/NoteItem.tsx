@@ -17,9 +17,10 @@ type NoteItemProps = {
   onUpdate: (id: string, fields: { title?: string; text?: string }) => void
   onDelete: (id: string) => void
   onToggleLink: (noteId: string, todoId: string) => void
+  onCreateTask: (noteId: string, text: string) => Promise<void>
 }
 
-export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete, onToggleLink }: NoteItemProps) {
+export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete, onToggleLink, onCreateTask }: NoteItemProps) {
   const [title, setTitle] = useState(note.title)
   const [text,  setText]  = useState(note.text)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -78,9 +79,10 @@ export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete
           />
         ) : (
           <h3
-            onDoubleClick={() => setIsEditingTitle(true)}
+            onClick={() => setIsEditingTitle(true)}
+            title="Click to edit title"
             className={cn(
-              'flex-1 cursor-text break-words text-sm font-semibold leading-snug',
+              'flex-1 cursor-text break-words rounded-lg text-sm font-semibold leading-snug transition-colors hover:bg-muted/50',
               !note.title && 'text-muted-foreground/60 italic'
             )}
           >
@@ -115,6 +117,7 @@ export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete
         allTodos={allTodos}
         linkedIds={linkedIds}
         onToggle={(todoId) => onToggleLink(note.id, todoId)}
+        onCreateTask={(text) => onCreateTask(note.id, text)}
       />
 
       {/* ── Timestamp ── */}

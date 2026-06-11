@@ -50,8 +50,8 @@ export function useTodos(user: User | null) {
 
   // ── add ────────────────────────────────────────────────────────────────────
 
-  const addTodo = useCallback(async (input: NewTodoInput) => {
-    if (!user) return
+  const addTodo = useCallback(async (input: NewTodoInput): Promise<string | null> => {
+    if (!user) return null
 
     const optimistic: Todo = {
       ...input,
@@ -83,10 +83,11 @@ export function useTodos(user: User | null) {
     if (error || !data) {
       // Rollback
       setTodos((prev) => prev.filter((t) => t.id !== optimistic.id))
-    } else {
-      // Replace optimistic with real row (gets the real UUID + created_at)
-      setTodos((prev) => prev.map((t) => t.id === optimistic.id ? rowToTodo(data) : t))
+      return null
     }
+    // Replace optimistic with real row (gets the real UUID + created_at)
+    setTodos((prev) => prev.map((t) => t.id === optimistic.id ? rowToTodo(data) : t))
+    return data.id as string
   }, [user])
 
   // ── toggle ─────────────────────────────────────────────────────────────────

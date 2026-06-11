@@ -310,6 +310,7 @@ export default function TodoApp() {
             deleteNote={deleteNote}
             linkTodo={linkTodo}
             unlinkTodo={unlinkTodo}
+            addTodo={addTodo}
           />
         )}
 

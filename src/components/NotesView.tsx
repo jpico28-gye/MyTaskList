@@ -9,6 +9,7 @@ import NoteItem from '@/components/NoteItem'
 import EmptyState from '@/components/EmptyState'
 import type { Note } from '@/hooks/useNotes'
 import type { Todo } from '@/components/TodoItem'
+import type { NewTodoInput } from '@/hooks/useTodos'
 
 type NotesViewProps = {
   notes: Note[]
@@ -21,11 +22,12 @@ type NotesViewProps = {
   deleteNote: (id: string) => void
   linkTodo: (noteId: string, todoId: string) => void
   unlinkTodo: (noteId: string, todoId: string) => void
+  addTodo: (input: NewTodoInput) => Promise<string | null>
 }
 
 export default function NotesView({
   notes, links, todos, filterTodoId, onClearFilter,
-  addNote, updateNote, deleteNote, linkTodo, unlinkTodo,
+  addNote, updateNote, deleteNote, linkTodo, unlinkTodo, addTodo,
 }: NotesViewProps) {
   const [newTitle, setNewTitle] = useState('')
   const [newText,  setNewText]  = useState('')
@@ -37,6 +39,19 @@ export default function NotesView({
     const linked = links[noteId]?.includes(todoId)
     if (linked) unlinkTodo(noteId, todoId)
     else linkTodo(noteId, todoId)
+  }
+
+  async function handleCreateTask(noteId: string, text: string) {
+    const todoId = await addTodo({
+      text,
+      priority:   null,
+      dueDate:    null,
+      dueTime:    null,
+      reminder:   null,
+      tags:       [],
+      assignedTo: null,
+    })
+    if (todoId) linkTodo(noteId, todoId)
   }
 
   function handleAddNote() {
@@ -162,6 +177,7 @@ export default function NotesView({
               onUpdate={updateNote}
               onDelete={deleteNote}
               onToggleLink={handleToggleLink}
+              onCreateTask={handleCreateTask}
             />
           ))}
         </AnimatePresence>
