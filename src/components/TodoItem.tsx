@@ -2,14 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Trash2, Check, X, CalendarDays, Clock, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2, StickyNote } from 'lucide-react'
+import { Pencil, Trash2, Check, X, CalendarDays, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2, StickyNote } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { format, isPast, isToday, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
+import DueDatePicker from '@/components/DueDatePicker'
 import TagPicker from '@/components/TagPicker'
 import { cn } from '@/lib/utils'
 import { tagColorClass } from '@/lib/tags'
@@ -118,9 +118,6 @@ type TodoItemProps = {
   onViewNotes?: (id: string) => void
 }
 
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 export default function TodoItem({
   todo,
@@ -143,7 +140,7 @@ export default function TodoItem({
   const [editValue,      setEditValue]      = useState(todo.text)
   const [showConfetti,   setShowConfetti]   = useState(false)
   const [reminderOpen,   setReminderOpen]   = useState(false)
-  const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [dueOpen,        setDueOpen]        = useState(false)
   const [commentsOpen,   setCommentsOpen]   = useState(false)
   const [commentInput,   setCommentInput]   = useState('')
   const [assignInput,    setAssignInput]    = useState(todo.assignedTo ?? '')
@@ -291,56 +288,21 @@ export default function TodoItem({
                 selected={todo.tags}
                 onChange={(tags) => onUpdateTags(todo.id, tags)}
               />
-              {/* Date picker */}
-              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                <PopoverTrigger
-                  className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
-                    todo.dueDate ? 'border-transparent bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground/50')}>
-                  <CalendarDays className="h-3 w-3" />
-                  {todo.dueDate
-                    ? `${format(parseISO(todo.dueDate), 'MMM d')}${todo.dueTime ? ` · ${formatTime(todo.dueTime)}` : ''}`
-                    : 'Due date'}
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single"
-                    selected={todo.dueDate ? parseISO(todo.dueDate) : undefined}
-                    onSelect={(d) => {
-                      onUpdateSchedule(todo.id, d ? toDateStr(d) : null, d ? todo.dueTime : null)
-                      setDatePickerOpen(false)
-                    }}
-                    initialFocus />
-                </PopoverContent>
-              </Popover>
+              {/* Unified due date + time picker */}
+              <button
+                onClick={() => setDueOpen(true)}
+                className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
+                  todo.dueDate ? 'border-transparent bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground/50')}>
+                <CalendarDays className="h-3 w-3" />
+                {todo.dueDate
+                  ? `${format(parseISO(todo.dueDate), 'MMM d')}${todo.dueTime ? ` · ${formatTime(todo.dueTime)}` : ''}`
+                  : 'Due'}
+              </button>
               {todo.dueDate && (
                 <button onClick={() => onUpdateSchedule(todo.id, null, null)}
                   className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground">
                   <X className="h-3 w-3" />
                 </button>
-              )}
-              {todo.dueDate && (
-                <label className={cn(
-                  'flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all focus-within:border-primary/50',
-                  todo.dueTime ? 'border-transparent bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground/50'
-                )}>
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <input
-                    type="time"
-                    value={todo.dueTime?.slice(0, 5) ?? ''}
-                    onChange={(e) => onUpdateSchedule(todo.id, todo.dueDate, e.target.value || null)}
-                    aria-label="Due time"
-                    className="bg-transparent text-[11px] tabular-nums focus:outline-none [&::-webkit-calendar-picker-indicator]:opacity-50"
-                  />
-                  {todo.dueTime && (
-                    <button
-                      type="button"
-                      onClick={() => onUpdateSchedule(todo.id, todo.dueDate, null)}
-                      aria-label="Clear time"
-                      className="shrink-0 opacity-60 hover:opacity-100"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  )}
-                </label>
               )}
               {todo.dueDate && (
                 <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
@@ -564,6 +526,15 @@ export default function TodoItem({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Unified due date + time picker */}
+      <DueDatePicker
+        open={dueOpen}
+        onClose={() => setDueOpen(false)}
+        dueDate={todo.dueDate}
+        dueTime={todo.dueTime}
+        onChange={(dueDate, dueTime) => onUpdateSchedule(todo.id, dueDate, dueTime)}
+      />
     </motion.li>
   )
 }

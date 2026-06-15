@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   PlusCircle, CalendarDays, X, ArrowUpDown, GripVertical,
-  Moon, Sun, Bell, BellOff, Sparkles, Search, LogOut, Loader2, StickyNote, ClipboardList, Timer,
+  Moon, Sun, Bell, BellOff, Sparkles, Search, LogOut, Loader2, StickyNote, ClipboardList,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import {
@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
 import TodoItem, { type Todo, type Priority, PRIORITY_CONFIG } from '@/components/TodoItem'
 import WeekView from '@/components/WeekView'
 import EmptyState, { type EmptyVariant } from '@/components/EmptyState'
@@ -24,7 +23,7 @@ import TagPicker from '@/components/TagPicker'
 import AuthGate from '@/components/AuthGate'
 import NotesView from '@/components/NotesView'
 import MicButton from '@/components/MicButton'
-import TimePickerModal from '@/components/TimePickerModal'
+import DueDatePicker from '@/components/DueDatePicker'
 import { cn } from '@/lib/utils'
 import { tagColorClass, parseTagsFromText } from '@/lib/tags'
 import { parseNaturalInput, toTimeStr, formatTime } from '@/lib/nlp'
@@ -53,6 +52,11 @@ function smartSort(a: Todo, b: Todo): number {
 
 function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function parseDateStr(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -84,9 +88,8 @@ export default function TodoApp() {
   const [pendingTime,     setPendingTime]     = useState<string | null>(null)
   const [pendingReminder, setPendingReminder] = useState<ReminderMinutes>(null)
   const [pendingTags,     setPendingTags]     = useState<string[]>([])
-  const [datePickerOpen,  setDatePickerOpen]  = useState(false)
   const [reminderOpen,    setReminderOpen]    = useState(false)
-  const [durationOpen,    setDurationOpen]    = useState(false)
+  const [dueOpen,         setDueOpen]         = useState(false)
 
   const { dark, toggle: toggleDark } = useDarkMode()
   const { permission, requestPermission } = useNotifications(todos, auth.user?.id ?? null)
@@ -388,21 +391,17 @@ export default function TodoApp() {
               )
             })}
 
-            {/* Date picker */}
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger
-                className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
-                  (pendingDate || selectedDay)
-                    ? 'border-transparent bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:border-muted-foreground/50')}>
-                <CalendarDays className="h-3 w-3" />
-                {datePillLabel ?? 'Due date'}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={pendingDate}
-                  onSelect={(d) => { setPendingDate(d); setDatePickerOpen(false) }} initialFocus />
-              </PopoverContent>
-            </Popover>
+            {/* Unified due date + time picker */}
+            <button
+              onClick={() => setDueOpen(true)}
+              className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
+                (pendingDate || selectedDay)
+                  ? 'border-transparent bg-primary/10 text-primary'
+                  : 'border-border text-muted-foreground hover:border-muted-foreground/50')}
+            >
+              <CalendarDays className="h-3 w-3" />
+              {datePillLabel ?? 'Due'}
+            </button>
 
             {pendingDate && (
               <button onClick={() => { setPendingDate(undefined); setPendingTime(null) }}
@@ -410,15 +409,6 @@ export default function TodoApp() {
                 <X className="h-3 w-3" />
               </button>
             )}
-
-            {/* Due-in duration picker (wheel modal) */}
-            <button
-              onClick={() => setDurationOpen(true)}
-              className="flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-all hover:border-muted-foreground/50"
-            >
-              <Timer className="h-3 w-3" />
-              Due in…
-            </button>
 
             {/* Reminder picker */}
             {(pendingDate || nlp?.date || selectedDay) && permission === 'granted' && (
@@ -601,14 +591,16 @@ export default function TodoApp() {
         )}
       </div>
 
-      {/* Duration → due-date picker */}
-      <TimePickerModal
-        open={durationOpen}
-        onClose={() => setDurationOpen(false)}
-        title="Due in…"
-        onConfirm={(date) => {
-          setPendingDate(date)
-          setPendingTime(toTimeStr(date))
+      {/* Unified due date + time picker */}
+      <DueDatePicker
+        open={dueOpen}
+        onClose={() => setDueOpen(false)}
+        title="Set due date"
+        dueDate={pendingDate ? toDateStr(pendingDate) : (selectedDay ? toDateStr(selectedDay) : null)}
+        dueTime={pendingTime}
+        onChange={(dueDate, dueTime) => {
+          setPendingDate(dueDate ? parseDateStr(dueDate) : undefined)
+          setPendingTime(dueTime)
         }}
       />
     </div>
