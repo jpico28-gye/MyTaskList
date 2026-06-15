@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Trash2, Check, X, CalendarDays, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2, StickyNote } from 'lucide-react'
+import { Pencil, Trash2, Check, X, CalendarDays, Clock, GripVertical, Bell, BellOff, MessageCircle, User, Send, Loader2, StickyNote } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { format, isPast, isToday, parseISO } from 'date-fns'
@@ -297,7 +297,9 @@ export default function TodoItem({
                   className={cn('flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all',
                     todo.dueDate ? 'border-transparent bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground/50')}>
                   <CalendarDays className="h-3 w-3" />
-                  {todo.dueDate ? format(parseISO(todo.dueDate), 'MMM d') : 'Due date'}
+                  {todo.dueDate
+                    ? `${format(parseISO(todo.dueDate), 'MMM d')}${todo.dueTime ? ` · ${formatTime(todo.dueTime)}` : ''}`
+                    : 'Due date'}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single"
@@ -316,12 +318,29 @@ export default function TodoItem({
                 </button>
               )}
               {todo.dueDate && (
-                <input
-                  type="time"
-                  value={todo.dueTime?.slice(0, 5) ?? ''}
-                  onChange={(e) => onUpdateSchedule(todo.id, todo.dueDate, e.target.value || null)}
-                  className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] text-muted-foreground focus:border-primary/50 focus:outline-none"
-                />
+                <label className={cn(
+                  'flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all focus-within:border-primary/50',
+                  todo.dueTime ? 'border-transparent bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground/50'
+                )}>
+                  <Clock className="h-3 w-3 shrink-0" />
+                  <input
+                    type="time"
+                    value={todo.dueTime?.slice(0, 5) ?? ''}
+                    onChange={(e) => onUpdateSchedule(todo.id, todo.dueDate, e.target.value || null)}
+                    aria-label="Due time"
+                    className="bg-transparent text-[11px] tabular-nums focus:outline-none [&::-webkit-calendar-picker-indicator]:opacity-50"
+                  />
+                  {todo.dueTime && (
+                    <button
+                      type="button"
+                      onClick={() => onUpdateSchedule(todo.id, todo.dueDate, null)}
+                      aria-label="Clear time"
+                      className="shrink-0 opacity-60 hover:opacity-100"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                </label>
               )}
               {todo.dueDate && (
                 <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
