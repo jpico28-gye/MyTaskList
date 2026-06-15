@@ -24,6 +24,7 @@ import AuthGate from '@/components/AuthGate'
 import NotesView from '@/components/NotesView'
 import MicButton from '@/components/MicButton'
 import DueDatePicker from '@/components/DueDatePicker'
+import AiTaskModal from '@/components/AiTaskModal'
 import { cn } from '@/lib/utils'
 import { tagColorClass, parseTagsFromText } from '@/lib/tags'
 import { parseNaturalInput, toTimeStr, formatTime } from '@/lib/nlp'
@@ -90,6 +91,7 @@ export default function TodoApp() {
   const [pendingTags,     setPendingTags]     = useState<string[]>([])
   const [reminderOpen,    setReminderOpen]    = useState(false)
   const [dueOpen,         setDueOpen]         = useState(false)
+  const [aiOpen,          setAiOpen]          = useState(false)
 
   const { dark, toggle: toggleDark } = useDarkMode()
   const { permission, requestPermission } = useNotifications(todos, auth.user?.id ?? null)
@@ -351,6 +353,15 @@ export default function TodoApp() {
                 className="absolute right-1.5 top-1/2 -translate-y-1/2"
               />
             </div>
+            <Button
+              variant="outline"
+              onClick={() => setAiOpen(true)}
+              aria-label="Create tasks with AI"
+              title="Create multiple tasks with AI"
+              className="h-10 w-10 shrink-0 rounded-xl p-0"
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+            </Button>
             <Button onClick={handleAddTodo} disabled={!input.trim()} className="h-10 rounded-xl px-4 shrink-0">
               <PlusCircle className="mr-1.5 h-4 w-4" />
               Add
@@ -602,6 +613,14 @@ export default function TodoApp() {
           setPendingDate(dueDate ? parseDateStr(dueDate) : undefined)
           setPendingTime(dueTime)
         }}
+      />
+
+      {/* AI task creator */}
+      <AiTaskModal
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        knownTags={allTags}
+        addTodo={addTodo}
       />
     </div>
   )
