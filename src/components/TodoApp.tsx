@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   PlusCircle, CalendarDays, X, ArrowUpDown, GripVertical,
-  Moon, Sun, Bell, BellOff, Sparkles, Search, LogOut, Loader2, StickyNote, ClipboardList,
+  Moon, Sun, Bell, BellOff, Sparkles, Search, LogOut, Loader2, StickyNote, ClipboardList, Timer,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import {
@@ -23,6 +23,8 @@ import EmptyState, { type EmptyVariant } from '@/components/EmptyState'
 import TagPicker from '@/components/TagPicker'
 import AuthGate from '@/components/AuthGate'
 import NotesView from '@/components/NotesView'
+import MicButton from '@/components/MicButton'
+import TimePickerModal from '@/components/TimePickerModal'
 import { cn } from '@/lib/utils'
 import { tagColorClass, parseTagsFromText } from '@/lib/tags'
 import { parseNaturalInput, toTimeStr, formatTime } from '@/lib/nlp'
@@ -84,6 +86,7 @@ export default function TodoApp() {
   const [pendingTags,     setPendingTags]     = useState<string[]>([])
   const [datePickerOpen,  setDatePickerOpen]  = useState(false)
   const [reminderOpen,    setReminderOpen]    = useState(false)
+  const [durationOpen,    setDurationOpen]    = useState(false)
 
   const { dark, toggle: toggleDark } = useDarkMode()
   const { permission, requestPermission } = useNotifications(todos, auth.user?.id ?? null)
@@ -327,18 +330,24 @@ export default function TodoApp() {
           className="rounded-2xl border border-border bg-card p-3 shadow-sm space-y-2"
         >
           <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
-              placeholder={
-                selectedDay
-                  ? `Add task for ${format(selectedDay, 'EEE MMM d')}…`
-                  : 'Try "Submit report tomorrow at 2pm #work"'
-              }
-              className="h-10 flex-1 rounded-xl text-sm"
-              aria-label="New task"
-            />
+            <div className="relative flex-1">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
+                placeholder={
+                  selectedDay
+                    ? `Add task for ${format(selectedDay, 'EEE MMM d')}…`
+                    : 'Try "Submit report tomorrow at 2pm #work"'
+                }
+                className="h-10 w-full rounded-xl pr-10 text-sm"
+                aria-label="New task"
+              />
+              <MicButton
+                onTranscript={(t) => setInput((prev) => (prev ? `${prev.trimEnd()} ${t}` : t))}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2"
+              />
+            </div>
             <Button onClick={handleAddTodo} disabled={!input.trim()} className="h-10 rounded-xl px-4 shrink-0">
               <PlusCircle className="mr-1.5 h-4 w-4" />
               Add
@@ -401,6 +410,15 @@ export default function TodoApp() {
                 <X className="h-3 w-3" />
               </button>
             )}
+
+            {/* Due-in duration picker (wheel modal) */}
+            <button
+              onClick={() => setDurationOpen(true)}
+              className="flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-all hover:border-muted-foreground/50"
+            >
+              <Timer className="h-3 w-3" />
+              Due in…
+            </button>
 
             {/* Reminder picker */}
             {(pendingDate || nlp?.date || selectedDay) && permission === 'granted' && (
@@ -582,6 +600,17 @@ export default function TodoApp() {
         </>
         )}
       </div>
+
+      {/* Duration → due-date picker */}
+      <TimePickerModal
+        open={durationOpen}
+        onClose={() => setDurationOpen(false)}
+        title="Due in…"
+        onConfirm={(date) => {
+          setPendingDate(date)
+          setPendingTime(toTimeStr(date))
+        }}
+      />
     </div>
   )
 }
