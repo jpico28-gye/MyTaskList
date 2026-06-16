@@ -26,7 +26,7 @@ export default function AiNoteModal({ open, onClose, addNote }: AiNoteModalProps
   const [text, setText] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const { supported, listening, interimTranscript, toggle, stop } = useSpeechRecognition({
+  const { supported, listening, interimTranscript, error: speechError, toggle, stop } = useSpeechRecognition({
     continuous: true,
     onResult: (t) => setTranscript((prev) => (prev ? `${prev.trim()} ${t}` : t)),
   })
@@ -127,6 +127,13 @@ export default function AiNoteModal({ open, onClose, addNote }: AiNoteModalProps
                     </span>
                   </div>
                 )}
+
+                {!supported && (
+                  <p className="rounded-lg bg-muted/60 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                    Voice input isn’t supported in this browser (try Chrome, Edge, or Safari). You can still type below.
+                  </p>
+                )}
+                {speechError && <p className="text-xs text-rose-500">{speechError}</p>}
 
                 <textarea
                   value={transcript + (interimTranscript ? ` ${interimTranscript}` : '')}
