@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { PlusCircle, Search, X, ListTodo } from 'lucide-react'
+import { PlusCircle, Search, X, ListTodo, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import NoteItem from '@/components/NoteItem'
+import AiNoteModal from '@/components/AiNoteModal'
 import EmptyState from '@/components/EmptyState'
 import type { Note } from '@/hooks/useNotes'
 import type { Todo } from '@/components/TodoItem'
@@ -31,6 +32,7 @@ export default function NotesView({
 }: NotesViewProps) {
   const [newTitle, setNewTitle] = useState('')
   const [newText,  setNewText]  = useState('')
+  const [aiOpen,   setAiOpen]   = useState(false)
   const [search,   setSearch]   = useState('')
 
   const filterTodo = filterTodoId ? todos.find((t) => t.id === filterTodoId) ?? null : null
@@ -106,7 +108,16 @@ export default function NotesView({
           className="w-full resize-none rounded-xl border border-border bg-background p-2.5 text-sm leading-snug text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
           aria-label="New note text"
         />
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setAiOpen(true)}
+            className="h-9 rounded-xl px-3"
+            title="Compose a note with AI"
+          >
+            <Sparkles className="mr-1.5 h-4 w-4 text-primary" />
+            AI note
+          </Button>
           <Button onClick={handleAddNote} disabled={!newTitle.trim() && !newText.trim()} className="h-9 rounded-xl px-4">
             <PlusCircle className="mr-1.5 h-4 w-4" />
             Add note
@@ -182,6 +193,9 @@ export default function NotesView({
           ))}
         </AnimatePresence>
       </ul>
+
+      {/* AI note composer */}
+      <AiNoteModal open={aiOpen} onClose={() => setAiOpen(false)} addNote={addNote} />
     </div>
   )
 }

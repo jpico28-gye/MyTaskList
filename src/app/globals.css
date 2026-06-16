@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
-  --font-heading: var(--font-jakarta), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-heading: var(--font-figtree), ui-sans-serif, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -435,48 +435,44 @@ html.dark body {
 
 /* ============================================================
    MY TASKS — Visual Improvements (Claude), Light Mode
-   Mirrors the .dark block above with the same structure and
-   purple accent identity, tuned for a light background.
+   Clean white surfaces with neutral accents (no purple wash).
+   Keeps the structural polish (frosted header, rounded tabs,
+   soft card shadows) from the dark theme.
    Scoped under html:not(.dark).
    ============================================================ */
 
-/* 1. BACKGROUND: soft neutral with subtle violet gradient */
+/* 1. BACKGROUND: clean white */
 html:not(.dark),
 html:not(.dark) body {
-  background-color: #fcfcfd !important;
+  background-color: #ffffff !important;
 }
 html:not(.dark) .min-h-screen.bg-gradient-to-br {
-  background: radial-gradient(ellipse at 30% 0%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 100%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
-              linear-gradient(160deg, #fdfdfe 0%, #f6f4fd 50%, #fbfaff 100%) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f7f8 100%) !important;
   min-height: 100vh;
 }
 
 /* 2. HEADER: frosted glass card feel */
 html:not(.dark) .relative.mb-8.w-full.max-w-lg.text-center {
-  background: rgba(255,255,255,0.5);
-  border: 1px solid rgba(0,0,0,0.05);
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.06);
   border-radius: 1.25rem;
   padding: 1.5rem 1.25rem 1.25rem;
-  box-shadow: 0 4px 24px rgba(124,58,237,0.06), 0 1px 0 rgba(255,255,255,0.6) inset;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.7) inset;
   backdrop-filter: blur(8px);
 }
 
-/* 3. TITLE: charcoal → violet gradient */
+/* 3. TITLE: solid charcoal */
 html:not(.dark) .font-heading.text-4xl,
 html:not(.dark) .font-heading.text-5xl,
 html:not(.dark) h1.font-heading {
-  background: linear-gradient(135deg, #18181b 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #18181b !important;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
 /* 4. SUBTITLE "N tasks remaining" */
 html:not(.dark) .mt-1.text-sm {
-  color: rgba(124, 58, 237, 0.65) !important;
+  color: #6b6b76 !important;
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
 }
@@ -492,45 +488,45 @@ html:not(.dark) .mt-2.inline-flex:hover {
 
 /* 6. ICON BUTTONS (bell & theme toggle) */
 html:not(.dark) button.absolute.rounded-xl.border.border-border.bg-background {
-  background: rgba(255,255,255,0.7) !important;
-  border-color: rgba(0,0,0,0.06) !important;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
   border-radius: 0.875rem !important;
   width: 2.25rem !important;
   height: 2.25rem !important;
-  box-shadow: 0 2px 8px rgba(124,58,237,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 html:not(.dark) button.absolute.rounded-xl.border.border-border.bg-background:hover {
-  background: rgba(255,255,255,0.95) !important;
+  background: #f7f7f8 !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124,58,237,0.14);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* 7. NOTIFICATION BELL (violet) */
+/* 7. NOTIFICATION BELL */
 html:not(.dark) button.absolute.rounded-xl.border.border-violet-300 {
   border-radius: 0.875rem !important;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.18);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: transform 0.15s, box-shadow 0.15s;
   width: 2.25rem !important;
   height: 2.25rem !important;
 }
 html:not(.dark) button.absolute.rounded-xl.border.border-violet-300:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
-/* 8. TAB BAR (Tasks / Notes) */
+/* 8. TAB BAR (Tasks / Notes) — active = white pill */
 html:not(.dark) [role="tablist"].bg-muted {
-  background: rgba(0,0,0,0.025) !important;
+  background: #f1f1f3 !important;
   border-radius: 0.875rem !important;
   padding: 3px !important;
   border: 1px solid rgba(0,0,0,0.05) !important;
 }
 html:not(.dark) [role="tab"][data-state="active"] {
-  background: linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.12) 100%) !important;
-  border-color: rgba(139,92,246,0.25) !important;
-  color: rgb(109,40,217) !important;
-  box-shadow: 0 1px 8px rgba(139,92,246,0.12);
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.06) !important;
+  color: #18181b !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 html:not(.dark) [role="tab"] {
   border-radius: 0.625rem !important;
@@ -544,29 +540,29 @@ html:not(.dark) [role="tab"]:not([data-state="active"]):hover {
 
 /* 9. CARDS (calendar, input area, search) */
 html:not(.dark) [class*="rounded-xl"][class*="border-border"]:not(li):not(button):not(input) {
-  background: rgba(255,255,255,0.6) !important;
-  border-color: rgba(0,0,0,0.05) !important;
-  box-shadow: 0 2px 12px rgba(124,58,237,0.05), 0 1px 0 rgba(255,255,255,0.6) inset;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.06) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.6) inset;
 }
 
 /* 10. TASK CARDS */
 html:not(.dark) li.group.relative {
-  background: rgba(255, 255, 255, 0.7) !important;
-  border-color: rgba(0,0,0,0.05) !important;
-  box-shadow: 0 2px 10px rgba(124,58,237,0.05), 0 1px 0 rgba(255,255,255,0.5) inset;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.06) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.5) inset;
   transition: box-shadow 0.2s, transform 0.15s !important;
   border-radius: 0.875rem !important;
 }
 html:not(.dark) li.group.relative:hover {
-  box-shadow: 0 4px 20px rgba(124,58,237,0.1), 0 1px 0 rgba(255,255,255,0.6) inset;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
   transform: translateY(-1px);
-  border-color: rgba(0,0,0,0.08) !important;
+  border-color: rgba(0,0,0,0.1) !important;
 }
 html:not(.dark) li.group.relative.border-l-4 {
   border-left-width: 3px !important;
 }
 html:not(.dark) li.group.relative.border-l-border {
-  border-left-color: rgba(139, 92, 246, 0.35) !important;
+  border-left-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 /* 11. TASK TITLE: slightly larger + more weight */
@@ -600,49 +596,47 @@ html:not(.dark) button.relative.flex.h-5.w-5.rounded-full {
   width: 1.375rem !important;
   height: 1.375rem !important;
   border-width: 1.5px !important;
-  border-color: rgba(139, 92, 246, 0.4) !important;
+  border-color: rgba(0, 0, 0, 0.25) !important;
   transition: border-color 0.2s, background 0.2s, transform 0.15s !important;
 }
 html:not(.dark) button.relative.flex.h-5.w-5.rounded-full:hover {
-  border-color: rgba(139, 92, 246, 0.8) !important;
-  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.55) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
   transform: scale(1.1);
 }
 
 /* 15. ADD TASK INPUT */
 html:not(.dark) input[placeholder*="Submit report"] {
-  background: rgba(255,255,255,0.7) !important;
-  border-color: rgba(0,0,0,0.07) !important;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.1) !important;
   padding: 0.625rem 0.875rem !important;
   font-size: 0.875rem !important;
   border-radius: 0.75rem !important;
   transition: border-color 0.2s, background 0.2s;
 }
 html:not(.dark) input[placeholder*="Submit report"]:focus {
-  border-color: rgba(139, 92, 246, 0.45) !important;
-  background: rgba(139, 92, 246, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.4) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* 16. SEARCH BAR */
 html:not(.dark) input[placeholder*="Search tasks"] {
-  background: rgba(255,255,255,0.6) !important;
-  border-color: rgba(0,0,0,0.05) !important;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
   border-radius: 0.75rem !important;
   font-size: 0.875rem !important;
 }
 html:not(.dark) input[placeholder*="Search tasks"]:focus {
-  border-color: rgba(139, 92, 246, 0.4) !important;
-  background: rgba(139, 92, 246, 0.03) !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* 17. ALL / ACTIVE / DONE filter tabs */
 html:not(.dark) [role="tablist"]:not(.grid-cols-2) [role="tab"][data-state="active"] {
-  background: rgba(139,92,246,0.14) !important;
-  color: rgb(109,40,217) !important;
-  border-color: rgba(139,92,246,0.25) !important;
+  background: #ffffff !important;
+  color: #18181b !important;
+  border-color: rgba(0,0,0,0.06) !important;
 }
 
 /* 18. PRIORITY FILTER BUTTONS (Low / Med / High) */
@@ -654,45 +648,45 @@ html:not(.dark) button.rounded-full.border.px-2\.5 {
 }
 html:not(.dark) button.rounded-full.border.px-2\.5:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(124,58,237,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 /* 19. SCROLLBAR */
 html:not(.dark) ::-webkit-scrollbar { width: 6px; height: 6px; }
 html:not(.dark) ::-webkit-scrollbar-track { background: transparent; }
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(0, 0, 0, 0.18);
   border-radius: 999px;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.4);
+  background: rgba(0, 0, 0, 0.3);
 }
 
-/* 20. CALENDAR: today circle — purple gradient */
+/* 20. CALENDAR: today circle — solid charcoal */
 html:not(.dark) span.bg-primary.text-primary-foreground.rounded-full {
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%) !important;
-  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.35) !important;
+  background: #18181b !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   color: white !important;
   font-weight: 700 !important;
 }
 
-/* 21. CALENDAR: task indicator dots — larger + purple */
+/* 21. CALENDAR: task indicator dots */
 html:not(.dark) .grid.grid-cols-7 span[class*="rounded-full"][class*="h-1"],
 html:not(.dark) .grid.grid-cols-7 [class*="h-1 w-1"],
 html:not(.dark) .grid.grid-cols-7 [class*="w-1 h-1"] {
   width: 5px !important;
   height: 5px !important;
-  background: rgba(139, 92, 246, 0.6) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
 }
 
 /* 22. CALENDAR: day column dividers — softer */
 html:not(.dark) .grid.grid-cols-7.divide-x > * {
-  border-color: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.05) !important;
 }
 
 /* 23. CALENDAR: day-of-week labels (M T W T F S S) */
 html:not(.dark) .grid.grid-cols-7 .text-xs {
-  color: rgba(124, 58, 237, 0.55) !important;
+  color: #9a9aa5 !important;
   font-weight: 600 !important;
   font-size: 0.6875rem !important;
   letter-spacing: 0.05em;
@@ -702,14 +696,13 @@ html:not(.dark) .grid.grid-cols-7 .text-xs {
 html:not(.dark) .w-full.min-w-0.border.border-input {
   padding: 0.625rem 0.875rem !important;
   border-radius: 0.75rem !important;
-  background: rgba(255,255,255,0.6) !important;
-  border-color: rgba(0,0,0,0.07) !important;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.1) !important;
   font-size: 0.875rem !important;
 }
 html:not(.dark) .w-full.min-w-0.border.border-input:focus {
-  border-color: rgba(139, 92, 246, 0.35) !important;
-  background: rgba(139, 92, 246, 0.03) !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* 25. TASK METADATA row spacing */
@@ -724,9 +717,6 @@ html:not(.dark) span.inline-flex[class*="bg-violet"] {
   font-size: 0.6875rem !important;
   padding: 1px 7px !important;
   border-radius: 999px !important;
-  background: rgba(139,92,246,0.1) !important;
-  color: rgb(109,40,217) !important;
-  border: 1px solid rgba(139,92,246,0.2) !important;
 }
 
 /* 27. GLOBAL: font smoothing + easing */
