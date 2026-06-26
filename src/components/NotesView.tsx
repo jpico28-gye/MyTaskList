@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { PlusCircle, Search, X, ListTodo, Sparkles } from 'lucide-react'
+import { PlusCircle, Search, X, ListTodo, Sparkles, ChevronRight } from 'lucide-react'
+import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import NoteItem from '@/components/NoteItem'
@@ -84,6 +85,27 @@ export default function NotesView({
     if (search.trim() || filterTodoId) return 'no-note-match' as const
     return 'no-notes' as const
   }
+
+  // Group notes into time-based "shelves": Recent (last 7 days), then by month.
+  // While searching/filtering, collapse into a single flat results shelf.
+  const groups = useMemo(() => {
+    const isFiltering = !!(search.trim() || filterTodoId)
+    if (isFiltering) return [{ key: 'results', label: 'Results', notes: filtered }]
+
+    const now = Date.now()
+    const WEEK = 7 * 86_400_000
+    const order: string[] = []
+    const map = new Map<string, { label: string; notes: Note[] }>()
+    for (const n of filtered) {
+      const recent = now - n.updatedAt < WEEK
+      const d = new Date(n.updatedAt)
+      const key = recent ? '__recent' : `${d.getFullYear()}-${d.getMonth()}`
+      const label = recent ? 'Recent' : format(d, 'MMMM yyyy')
+      if (!map.has(key)) { map.set(key, { label, notes: [] }); order.push(key) }
+      map.get(key)!.notes.push(n)
+    }
+    return order.map((k) => ({ key: k, label: map.get(k)!.label, notes: map.get(k)!.notes }))
+  }, [filtered, search, filterTodoId])
 
   return (
     <div className="space-y-4">
@@ -171,28 +193,41 @@ export default function NotesView({
         )}
       </AnimatePresence>
 
-      {/* ── Notes list ── */}
-      <ul className="space-y-2">
-        <AnimatePresence initial={false} mode="popLayout">
-          {filtered.length === 0 && (
-            <motion.li key="empty" className="list-none">
-              <EmptyState variant={emptyVariant()} />
-            </motion.li>
-          )}
-          {filtered.map((note) => (
-            <NoteItem
-              key={note.id}
-              note={note}
-              allTodos={todos}
-              linkedIds={links[note.id] ?? []}
-              onUpdate={updateNote}
-              onDelete={deleteNote}
-              onToggleLink={handleToggleLink}
-              onCreateTask={handleCreateTask}
-            />
+      {/* ── Notes shelves (horizontal cards, grouped by recency) ── */}
+      {filtered.length === 0 ? (
+        <EmptyState variant={emptyVariant()} />
+      ) : (
+        <div className="space-y-4">
+          {groups.map((g, gi) => (
+            <details key={g.key} open={gi === 0} className="group/shelf">
+              <summary className="flex cursor-pointer select-none list-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open/shelf:rotate-90" />
+                <span className="text-xs font-semibold text-foreground">{g.label}</span>
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {g.notes.length}
+                </span>
+              </summary>
+              <ul className="mt-2 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
+                <AnimatePresence initial={false} mode="popLayout">
+                  {g.notes.map((note) => (
+                    <NoteItem
+                      key={note.id}
+                      className="w-[17rem] max-h-[24rem] shrink-0 snap-start overflow-y-auto"
+                      note={note}
+                      allTodos={todos}
+                      linkedIds={links[note.id] ?? []}
+                      onUpdate={updateNote}
+                      onDelete={deleteNote}
+                      onToggleLink={handleToggleLink}
+                      onCreateTask={handleCreateTask}
+                    />
+                  ))}
+                </AnimatePresence>
+              </ul>
+            </details>
           ))}
-        </AnimatePresence>
-      </ul>
+        </div>
+      )}
 
       {/* AI note composer */}
       <AiNoteModal open={aiOpen} onClose={() => setAiOpen(false)} addNote={addNote} />

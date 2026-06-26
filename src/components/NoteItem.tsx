@@ -18,9 +18,10 @@ type NoteItemProps = {
   onDelete: (id: string) => void
   onToggleLink: (noteId: string, todoId: string) => void
   onCreateTask: (noteId: string, text: string) => Promise<void>
+  className?: string
 }
 
-export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete, onToggleLink, onCreateTask }: NoteItemProps) {
+export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete, onToggleLink, onCreateTask, className }: NoteItemProps) {
   const [title, setTitle] = useState(note.title)
   const [text,  setText]  = useState(note.text)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -60,7 +61,7 @@ export default function NoteItem({ note, allTodos, linkedIds, onUpdate, onDelete
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
-      className="group rounded-xl border border-border bg-card p-3 shadow-sm space-y-2"
+      className={cn('group rounded-xl border border-border bg-card p-3 shadow-sm space-y-2', className)}
     >
       {/* ── Title row ── */}
       <div className="flex items-start gap-2">
