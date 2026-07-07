@@ -6,7 +6,8 @@ import { PlusCircle, Search, X, ListTodo, Sparkles, ChevronRight } from 'lucide-
 import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import NoteItem from '@/components/NoteItem'
+import NoteCard from '@/components/NoteCard'
+import NoteEditorModal from '@/components/NoteEditorModal'
 import AiNoteModal from '@/components/AiNoteModal'
 import EmptyState from '@/components/EmptyState'
 import type { Note } from '@/hooks/useNotes'
@@ -31,9 +32,9 @@ export default function NotesView({
   notes, links, todos, filterTodoId, onClearFilter,
   addNote, updateNote, deleteNote, linkTodo, unlinkTodo, addTodo,
 }: NotesViewProps) {
-  const [newTitle, setNewTitle] = useState('')
-  const [newText,  setNewText]  = useState('')
   const [aiOpen,   setAiOpen]   = useState(false)
+  // Editor: null = closed, 'new' = compose, otherwise a note id being edited.
+  const [editing,  setEditing]  = useState<'new' | string | null>(null)
   const [search,   setSearch]   = useState('')
 
   const filterTodo = filterTodoId ? todos.find((t) => t.id === filterTodoId) ?? null : null
@@ -57,14 +58,7 @@ export default function NotesView({
     if (todoId) linkTodo(noteId, todoId)
   }
 
-  function handleAddNote() {
-    const text = newText.trim()
-    const title = newTitle.trim()
-    if (!text && !title) return
-    addNote(title, text)
-    setNewTitle('')
-    setNewText('')
-  }
+  const editingNote = typeof editing === 'string' ? notes.find((n) => n.id === editing) ?? null : null
 
   const filtered = useMemo(() => {
     let result = notes
@@ -109,42 +103,24 @@ export default function NotesView({
 
   return (
     <div className="space-y-4">
-      {/* ── New note card ── */}
+      {/* ── New note actions ── */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }}
-        className="rounded-2xl border border-border bg-card p-3 shadow-sm space-y-2"
+        className="flex gap-2"
       >
-        <Input
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="Title (optional)"
-          className="h-9 rounded-xl text-sm font-medium"
-          aria-label="New note title"
-        />
-        <textarea
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAddNote() }}
-          placeholder="Write a note…"
-          rows={3}
-          className="w-full resize-none rounded-xl border border-border bg-background p-2.5 text-sm leading-snug text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-          aria-label="New note text"
-        />
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setAiOpen(true)}
-            className="h-9 rounded-xl px-3"
-            title="Compose a note with AI"
-          >
-            <Sparkles className="mr-1.5 h-4 w-4 text-primary" />
-            AI note
-          </Button>
-          <Button onClick={handleAddNote} disabled={!newTitle.trim() && !newText.trim()} className="h-9 rounded-xl px-4">
-            <PlusCircle className="mr-1.5 h-4 w-4" />
-            Add note
-          </Button>
-        </div>
+        <Button onClick={() => setEditing('new')} className="h-10 flex-1 rounded-xl">
+          <PlusCircle className="mr-1.5 h-4 w-4" />
+          New note
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setAiOpen(true)}
+          className="h-10 rounded-xl px-3"
+          title="Compose a note with AI"
+        >
+          <Sparkles className="mr-1.5 h-4 w-4 text-primary" />
+          AI note
+        </Button>
       </motion.div>
 
       {/* ── Search bar ── */}
@@ -210,16 +186,13 @@ export default function NotesView({
               <ul className="mt-2 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
                 <AnimatePresence initial={false} mode="popLayout">
                   {g.notes.map((note) => (
-                    <NoteItem
+                    <NoteCard
                       key={note.id}
-                      className="w-[17rem] max-h-[24rem] shrink-0 snap-start overflow-y-auto"
+                      className="w-[16rem] shrink-0 snap-start"
                       note={note}
-                      allTodos={todos}
-                      linkedIds={links[note.id] ?? []}
-                      onUpdate={updateNote}
-                      onDelete={deleteNote}
-                      onToggleLink={handleToggleLink}
-                      onCreateTask={handleCreateTask}
+                      linkedCount={links[note.id]?.length ?? 0}
+                      onOpen={() => setEditing(note.id)}
+                      onDelete={() => deleteNote(note.id)}
                     />
                   ))}
                 </AnimatePresence>
@@ -228,6 +201,20 @@ export default function NotesView({
           ))}
         </div>
       )}
+
+      {/* Note editor (view / edit / compose) */}
+      <NoteEditorModal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        note={editingNote}
+        allTodos={todos}
+        linkedIds={editingNote ? (links[editingNote.id] ?? []) : []}
+        onCreate={addNote}
+        onUpdate={updateNote}
+        onDelete={deleteNote}
+        onToggleLink={handleToggleLink}
+        onCreateTask={handleCreateTask}
+      />
 
       {/* AI note composer */}
       <AiNoteModal open={aiOpen} onClose={() => setAiOpen(false)} addNote={addNote} />
