@@ -121,7 +121,7 @@ export default function NoteEditorModal({
                 onBlur={commit}
                 placeholder="Write your note…"
                 autoFocus={isNew}
-                className="min-h-[40vh] flex-1 resize-none overflow-y-auto bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted-foreground/50"
+                className="scroll-clean min-h-[40vh] flex-1 resize-none overflow-y-auto bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-muted-foreground/50"
               />
             </div>
 

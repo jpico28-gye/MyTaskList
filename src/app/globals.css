@@ -129,6 +129,35 @@
   }
 }
 
+/* Clean, minimal scrollbar — invisible until you hover/scroll the area.
+   Overrides the global themed scrollbars for editors and content frames. */
+.scroll-clean {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scroll-clean:hover,
+.scroll-clean:focus {
+  scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent;
+}
+.scroll-clean::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-clean::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-clean::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.scroll-clean:hover::-webkit-scrollbar-thumb,
+.scroll-clean:focus::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  background-clip: content-box;
+}
+
 /* ============================================================
    MY TASKS — Visual Improvements (Claude)
    Scoped under .dark (applied to <html> by useDarkMode) so the
