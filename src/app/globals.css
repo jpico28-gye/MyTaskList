@@ -308,7 +308,6 @@ html.dark body {
 .dark input[placeholder*="Submit report"] {
   background: rgba(255,255,255,0.04) !important;
   border-color: rgba(255,255,255,0.1) !important;
-  padding: 0.625rem 0.875rem !important;
   font-size: 0.875rem !important;
   border-radius: 0.75rem !important;
   transition: border-color 0.2s, background 0.2s;
@@ -395,7 +394,6 @@ html.dark body {
 
 /* 24. ALL TEXT INPUTS (general) */
 .dark .w-full.min-w-0.border.border-input {
-  padding: 0.625rem 0.875rem !important;
   border-radius: 0.75rem !important;
   background: rgba(255,255,255,0.03) !important;
   border-color: rgba(255,255,255,0.09) !important;
@@ -609,7 +607,6 @@ html:not(.dark) button.relative.flex.h-5.w-5.rounded-full:hover {
 html:not(.dark) input[placeholder*="Submit report"] {
   background: #ffffff !important;
   border-color: rgba(0,0,0,0.1) !important;
-  padding: 0.625rem 0.875rem !important;
   font-size: 0.875rem !important;
   border-radius: 0.75rem !important;
   transition: border-color 0.2s, background 0.2s;
@@ -694,7 +691,6 @@ html:not(.dark) .grid.grid-cols-7 .text-xs {
 
 /* 24. ALL TEXT INPUTS (general) */
 html:not(.dark) .w-full.min-w-0.border.border-input {
-  padding: 0.625rem 0.875rem !important;
   border-radius: 0.75rem !important;
   background: #ffffff !important;
   border-color: rgba(0,0,0,0.1) !important;
