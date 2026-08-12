@@ -12,101 +12,112 @@ interface AmbientBackgroundProps {
 
 export default function AmbientBackground({ preset = 'aurora', className }: AmbientBackgroundProps) {
   return (
-    <div className={cn('fixed inset-0 pointer-events-none overflow-hidden -z-10 select-none', className)}>
-      {/* ── Aurora Mesh Gradient Orbs ── */}
+    <div className={cn('fixed inset-0 pointer-events-none overflow-hidden z-0 select-none', className)}>
+      {/* ── Base Ambient Gradient ── */}
+      <div
+        className={cn(
+          'absolute inset-0 transition-colors duration-700',
+          preset === 'sunset'
+            ? 'bg-gradient-to-br from-amber-50/90 via-rose-50/50 to-orange-100/60 dark:from-slate-950 dark:via-rose-950/20 dark:to-amber-950/30'
+            : preset === 'grid'
+            ? 'bg-slate-50/90 dark:bg-slate-950'
+            : preset === 'minimal'
+            ? 'bg-gradient-to-b from-background via-muted/30 to-background'
+            : 'bg-gradient-to-br from-violet-50/80 via-background to-indigo-50/60 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950'
+        )}
+      />
+
+      {/* ── Glowing Aurora Gradient Mesh Orbs ── */}
       {(preset === 'aurora' || preset === 'sunset') && (
         <>
           {/* Top-Left Orb */}
           <motion.div
             animate={{
-              x: [0, 30, -20, 0],
-              y: [0, -30, 20, 0],
-              scale: [1, 1.15, 0.9, 1],
+              x: [0, 40, -30, 0],
+              y: [0, -40, 30, 0],
+              scale: [1, 1.25, 0.85, 1],
             }}
             transition={{
-              duration: 18,
+              duration: 16,
               repeat: Infinity,
               repeatType: 'mirror',
               ease: 'easeInOut',
             }}
             className={cn(
-              'absolute -top-32 -left-32 h-[30rem] w-[30rem] rounded-full blur-[110px] opacity-70 transition-colors',
+              'absolute -top-32 -left-32 h-[36rem] w-[36rem] rounded-full blur-[100px] transition-colors',
               preset === 'sunset'
-                ? 'bg-amber-400/25 dark:bg-amber-600/20'
-                : 'bg-violet-500/20 dark:bg-violet-600/25'
+                ? 'bg-amber-400/40 dark:bg-amber-500/30'
+                : 'bg-violet-400/45 dark:bg-violet-600/35'
             )}
           />
 
           {/* Top-Right Orb */}
           <motion.div
             animate={{
-              x: [0, -40, 25, 0],
-              y: [0, 35, -25, 0],
-              scale: [1, 0.9, 1.2, 1],
+              x: [0, -50, 30, 0],
+              y: [0, 45, -30, 0],
+              scale: [1, 0.85, 1.25, 1],
             }}
             transition={{
-              duration: 22,
+              duration: 20,
               repeat: Infinity,
               repeatType: 'mirror',
               ease: 'easeInOut',
             }}
             className={cn(
-              'absolute -top-20 -right-32 h-[34rem] w-[34rem] rounded-full blur-[120px] opacity-60 transition-colors',
+              'absolute -top-24 -right-32 h-[40rem] w-[40rem] rounded-full blur-[110px] transition-colors',
               preset === 'sunset'
-                ? 'bg-rose-500/20 dark:bg-rose-600/20'
-                : 'bg-indigo-500/20 dark:bg-indigo-600/25'
+                ? 'bg-rose-400/40 dark:bg-rose-600/30'
+                : 'bg-indigo-400/40 dark:bg-indigo-600/35'
             )}
           />
 
           {/* Bottom-Center Orb */}
           <motion.div
             animate={{
-              x: [0, 25, -35, 0],
-              y: [0, -25, 30, 0],
-              scale: [1, 1.1, 0.95, 1],
+              x: [0, 35, -45, 0],
+              y: [0, -35, 40, 0],
+              scale: [1, 1.15, 0.9, 1],
             }}
             transition={{
-              duration: 25,
+              duration: 24,
               repeat: Infinity,
               repeatType: 'mirror',
               ease: 'easeInOut',
             }}
             className={cn(
-              'absolute -bottom-40 left-1/2 -translate-x-1/2 h-[36rem] w-[36rem] rounded-full blur-[130px] opacity-50 transition-colors',
+              'absolute -bottom-48 left-1/2 -translate-x-1/2 h-[44rem] w-[44rem] rounded-full blur-[120px] transition-colors',
               preset === 'sunset'
-                ? 'bg-orange-500/15 dark:bg-amber-500/15'
-                : 'bg-pink-500/15 dark:bg-purple-600/20'
+                ? 'bg-orange-400/30 dark:bg-amber-600/25'
+                : 'bg-pink-400/35 dark:bg-purple-600/30'
             )}
           />
         </>
       )}
 
-      {/* ── Geometric Grid Pattern Overlay ── */}
+      {/* ── Geometric Dot Grid Matrix Overlay ── */}
       {(preset === 'aurora' || preset === 'grid') && (
         <div
-          className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07]"
+          className="absolute inset-0 opacity-[0.15] dark:opacity-[0.25]"
           style={{
-            backgroundImage: `radial-gradient(currentColor 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(currentColor 1.2px, transparent 1.2px)`,
             backgroundSize: '24px 24px',
-            maskImage: 'radial-gradient(ellipse 80% 80% at 50% 30%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 30%, black 40%, transparent 100%)',
+            maskImage: 'radial-gradient(ellipse 90% 90% at 50% 30%, black 50%, transparent 100%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 90% 90% at 50% 30%, black 50%, transparent 100%)',
           }}
         />
       )}
 
-      {/* ── Grid lines for 'grid' preset ── */}
+      {/* ── Engineering Grid lines for 'grid' preset ── */}
       {preset === 'grid' && (
         <div
-          className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05]"
+          className="absolute inset-0 opacity-[0.08] dark:opacity-[0.15]"
           style={{
             backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
+            backgroundSize: '48px 48px',
           }}
         />
       )}
-
-      {/* ── Soft Vignette Overlay ── */}
-      <div className="absolute inset-0 bg-radial from-transparent via-transparent to-background/50 pointer-events-none" />
     </div>
   )
 }

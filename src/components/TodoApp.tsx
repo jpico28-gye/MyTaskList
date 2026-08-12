@@ -345,41 +345,42 @@ export default function TodoApp() {
   // ── main UI ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative flex min-h-screen font-sans text-foreground overflow-x-hidden">
+    <div className="relative min-h-screen font-sans text-foreground overflow-x-hidden">
       {/* ── Dynamic Ambient Background ── */}
       <AmbientBackground preset={bgPreset} />
 
-      {/* ── Side Menu Panel ── */}
-      <Sidebar
-        user={auth.user}
-        todos={todos}
-        notes={notes}
-        currentView={view}
-        smartView={smartView}
-        selectedPriority={selectedPriority}
-        activeTags={activeTags}
-        allTags={allTags}
-        dark={dark}
-        permission={permission}
-        collapsed={sidebarCollapsed}
-        mobileOpen={mobileSidebarOpen}
-        bgPreset={bgPreset}
-        onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
-        onSelectSmartView={handleSelectSmartView}
-        onSelectPriority={setSelectedPriority}
-        onToggleTag={toggleActiveTag}
-        onClearTagFilters={() => setActiveTags([])}
-        onToggleDark={toggleDark}
-        onRequestNotification={requestPermission}
-        onSignOut={auth.signOut}
-        onOpenQuickTask={handleOpenQuickTask}
-        onOpenAiTask={() => setAiOpen(true)}
-        onSelectBgPreset={setBgPreset}
-      />
+      {/* ── App Content (Elevated above background) ── */}
+      <div className="relative z-10 flex min-h-screen">
+        <Sidebar
+          user={auth.user}
+          todos={todos}
+          notes={notes}
+          currentView={view}
+          smartView={smartView}
+          selectedPriority={selectedPriority}
+          activeTags={activeTags}
+          allTags={allTags}
+          dark={dark}
+          permission={permission}
+          collapsed={sidebarCollapsed}
+          mobileOpen={mobileSidebarOpen}
+          bgPreset={bgPreset}
+          onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+          onSelectSmartView={handleSelectSmartView}
+          onSelectPriority={setSelectedPriority}
+          onToggleTag={toggleActiveTag}
+          onClearTagFilters={() => setActiveTags([])}
+          onToggleDark={toggleDark}
+          onRequestNotification={requestPermission}
+          onSignOut={auth.signOut}
+          onOpenQuickTask={handleOpenQuickTask}
+          onOpenAiTask={() => setAiOpen(true)}
+          onSelectBgPreset={setBgPreset}
+        />
 
-      {/* ── Main Canvas Area ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* ── Main Canvas Area ── */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Top Navbar for Mobile */}
         <header className="flex lg:hidden items-center justify-between border-b border-border/60 bg-card/80 backdrop-blur-md px-4 py-3 sticky top-0 z-30">
           <div className="flex items-center gap-3 min-w-0">
@@ -795,6 +796,7 @@ export default function TodoApp() {
         knownTags={allTags}
         addTodo={addTodo}
       />
+      </div>
     </div>
   )
 }
