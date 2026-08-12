@@ -72,7 +72,7 @@ export default function TodoApp() {
   } = useTodos(auth.user)
   const {
     notes, links: noteLinks,
-    addNote, updateNote, deleteNote, linkTodo, unlinkTodo,
+    addNote, updateNote, togglePinNote, deleteNote, linkTodo, unlinkTodo,
   } = useNotes(auth.user)
 
   const [input,            setInput]            = useState('')
@@ -454,6 +454,7 @@ export default function TodoApp() {
                 onClearFilter={() => setNoteFilterTodoId(null)}
                 addNote={addNote}
                 updateNote={updateNote}
+                togglePinNote={togglePinNote}
                 deleteNote={deleteNote}
                 linkTodo={linkTodo}
                 unlinkTodo={unlinkTodo}

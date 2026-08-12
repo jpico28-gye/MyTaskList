@@ -6,19 +6,30 @@ import { supabase, type NoteRow, type NoteLinkRow } from '@/lib/supabase'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
+export type NoteColor = 'default' | 'amber' | 'emerald' | 'violet' | 'rose' | 'blue'
+
 export type Note = {
   id: string
   title: string
   text: string
+  color?: NoteColor
+  pinned?: boolean
   createdAt: number
   updatedAt: number
 }
 
-function rowToNote(row: NoteRow): Note {
+type ExtendedNoteRow = NoteRow & {
+  color?: NoteColor
+  pinned?: boolean
+}
+
+function rowToNote(row: ExtendedNoteRow): Note {
   return {
     id:        row.id,
     title:     row.title,
     text:      row.text,
+    color:     row.color ?? 'default',
+    pinned:    Boolean(row.pinned),
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   }
@@ -64,7 +75,7 @@ export function useNotes(user: User | null) {
 
   // ── add ────────────────────────────────────────────────────────────────────
 
-  const addNote = useCallback(async (title: string, text: string) => {
+  const addNote = useCallback(async (title: string, text: string, color: NoteColor = 'default', pinned = false) => {
     if (!user) return
 
     const now = new Date().toISOString()
@@ -72,6 +83,8 @@ export function useNotes(user: User | null) {
       id:        crypto.randomUUID(),
       title,
       text,
+      color,
+      pinned,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
@@ -87,20 +100,31 @@ export function useNotes(user: User | null) {
     if (error || !data) {
       setNotes((prev) => prev.filter((n) => n.id !== optimistic.id))
     } else {
-      setNotes((prev) => prev.map((n) => n.id === optimistic.id ? rowToNote(data) : n))
+      setNotes((prev) => prev.map((n) => n.id === optimistic.id ? { ...rowToNote(data), color, pinned } : n))
     }
   }, [user])
 
   // ── update ─────────────────────────────────────────────────────────────────
 
-  const updateNote = useCallback(async (id: string, fields: { title?: string; text?: string }) => {
+  const updateNote = useCallback(async (id: string, fields: { title?: string; text?: string; color?: NoteColor; pinned?: boolean }) => {
     const updatedAt = Date.now()
     setNotes((prev) => prev.map((n) => n.id === id ? { ...n, ...fields, updatedAt } : n))
 
+    // Send standard fields to supabase
+    const payload: Record<string, unknown> = { updated_at: new Date(updatedAt).toISOString() }
+    if (fields.title !== undefined) payload.title = fields.title
+    if (fields.text !== undefined) payload.text = fields.text
+
     await supabase
       .from('notes')
-      .update({ ...fields, updated_at: new Date(updatedAt).toISOString() })
+      .update(payload)
       .eq('id', id)
+  }, [])
+
+  // ── toggle pin ─────────────────────────────────────────────────────────────
+
+  const togglePinNote = useCallback((id: string) => {
+    setNotes((prev) => prev.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n))
   }, [])
 
   // ── delete ─────────────────────────────────────────────────────────────────
@@ -147,6 +171,7 @@ export function useNotes(user: User | null) {
     loading,
     addNote,
     updateNote,
+    togglePinNote,
     deleteNote,
     linkTodo,
     unlinkTodo,
