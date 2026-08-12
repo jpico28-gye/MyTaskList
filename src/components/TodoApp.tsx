@@ -27,6 +27,7 @@ import MicButton from '@/components/MicButton'
 import DueDatePicker from '@/components/DueDatePicker'
 import AiTaskModal from '@/components/AiTaskModal'
 import Sidebar, { type SmartView } from '@/components/Sidebar'
+import AmbientBackground, { type BackgroundPreset } from '@/components/AmbientBackground'
 import { cn } from '@/lib/utils'
 import { tagColorClass, parseTagsFromText } from '@/lib/tags'
 import { parseNaturalInput, toTimeStr, formatTime } from '@/lib/nlp'
@@ -90,6 +91,7 @@ export default function TodoApp() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [smartView,         setSmartView]         = useState<SmartView>('all')
   const [selectedPriority,  setSelectedPriority]  = useState<Priority | null>(null)
+  const [bgPreset,          setBgPreset]          = useState<BackgroundPreset>('aurora')
 
   const taskInputRef = useRef<HTMLInputElement>(null)
 
@@ -343,7 +345,10 @@ export default function TodoApp() {
   // ── main UI ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-background via-background to-muted/40 font-sans text-foreground">
+    <div className="relative flex min-h-screen font-sans text-foreground overflow-x-hidden">
+      {/* ── Dynamic Ambient Background ── */}
+      <AmbientBackground preset={bgPreset} />
+
       {/* ── Side Menu Panel ── */}
       <Sidebar
         user={auth.user}
@@ -358,6 +363,7 @@ export default function TodoApp() {
         permission={permission}
         collapsed={sidebarCollapsed}
         mobileOpen={mobileSidebarOpen}
+        bgPreset={bgPreset}
         onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         onSelectSmartView={handleSelectSmartView}
@@ -369,6 +375,7 @@ export default function TodoApp() {
         onSignOut={auth.signOut}
         onOpenQuickTask={handleOpenQuickTask}
         onOpenAiTask={() => setAiOpen(true)}
+        onSelectBgPreset={setBgPreset}
       />
 
       {/* ── Main Canvas Area ── */}

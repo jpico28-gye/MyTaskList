@@ -6,14 +6,16 @@ import {
   Sun, Moon, Bell, BellOff, LogOut, PlusCircle, Sparkles,
   CalendarDays, Calendar, Clock, CheckCircle2, Inbox, StickyNote,
   Tag, ChevronRight, ChevronDown, PanelLeftClose, PanelLeftOpen,
-  X, Check, Flame, Target, User, ShieldCheck, Filter
+  X, Check, Flame, Target, User, ShieldCheck, Filter, Palette
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Todo, Priority } from '@/components/TodoItem'
 import type { Note } from '@/hooks/useNotes'
+import type { BackgroundPreset } from '@/components/AmbientBackground'
 import { cn } from '@/lib/utils'
 import { tagColorClass } from '@/lib/tags'
 import { PRIORITY_CONFIG } from '@/components/TodoItem'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 export type SmartView = 'all' | 'today' | 'upcoming' | 'reminders' | 'completed' | 'notes'
 
@@ -30,6 +32,7 @@ interface SidebarProps {
   permission: NotificationPermission
   collapsed: boolean
   mobileOpen: boolean
+  bgPreset: BackgroundPreset
   onToggleCollapse: () => void
   onCloseMobile: () => void
   onSelectSmartView: (view: SmartView) => void
@@ -41,6 +44,7 @@ interface SidebarProps {
   onSignOut: () => void
   onOpenQuickTask: () => void
   onOpenAiTask: () => void
+  onSelectBgPreset: (preset: BackgroundPreset) => void
 }
 
 function toDateStr(d: Date): string {
@@ -60,6 +64,7 @@ export default function Sidebar({
   permission,
   collapsed,
   mobileOpen,
+  bgPreset,
   onToggleCollapse,
   onCloseMobile,
   onSelectSmartView,
@@ -71,6 +76,7 @@ export default function Sidebar({
   onSignOut,
   onOpenQuickTask,
   onOpenAiTask,
+  onSelectBgPreset,
 }: SidebarProps) {
   const [tagsExpanded, setTagsExpanded] = useState(true)
   const [priorityExpanded, setPriorityExpanded] = useState(true)
@@ -194,6 +200,13 @@ export default function Sidebar({
       badgeColor: 'bg-muted text-muted-foreground',
       activeColor: 'bg-muted text-foreground font-semibold',
     },
+  ]
+
+  const bgPresets: { id: BackgroundPreset; label: string; icon: string }[] = [
+    { id: 'aurora', label: 'Aurora Mesh', icon: '🌌' },
+    { id: 'grid', label: 'Subtle Grid', icon: '📐' },
+    { id: 'sunset', label: 'Sunset Glow', icon: '🌅' },
+    { id: 'minimal', label: 'Minimal', icon: '🍃' },
   ]
 
   const sidebarContent = (
@@ -464,6 +477,40 @@ export default function Sidebar({
           >
             {permission === 'granted' ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
           </button>
+
+          {/* Background Ambient Style Selector */}
+          <Popover>
+            <PopoverTrigger
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground shadow-xs transition-colors hover:text-foreground"
+              title="Background ambient style"
+              aria-label="Background ambient style"
+            >
+              <Palette className="h-3.5 w-3.5" />
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1.5" align="center">
+              <div className="space-y-1">
+                <span className="px-2 text-[10px] font-semibold uppercase text-muted-foreground">Background Style</span>
+                {bgPresets.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => onSelectBgPreset(p.id)}
+                    className={cn(
+                      'flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors',
+                      bgPreset === p.id
+                        ? 'bg-primary/10 text-primary font-semibold'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{p.icon}</span>
+                      <span>{p.label}</span>
+                    </span>
+                    {bgPreset === p.id && <Check className="h-3.5 w-3.5" />}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Theme Toggle */}
           <button
