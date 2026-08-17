@@ -88,15 +88,10 @@ export default function NoteCard({
 
   return (
     <motion.li
-      layout
-      layoutId={`note-card-${note.id}`}
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{
-        layout: { type: 'spring', damping: 28, stiffness: 280 },
-        opacity: { duration: 0.2 },
-      }}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -107,7 +102,7 @@ export default function NoteCard({
         }
       }}
       className={cn(
-        'group relative flex cursor-pointer rounded-2xl border text-left shadow-2xs transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-hidden',
+        'group relative flex cursor-pointer rounded-2xl border text-left shadow-2xs transition-all duration-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-hidden',
         colorCfg.card,
         note.isPrivate && 'border-dashed border-purple-400/60 dark:border-purple-600/40',
         isList ? 'flex-row items-center justify-between gap-4 h-16 px-3.5 py-2.5' : 'flex-col justify-between h-56 p-4',
