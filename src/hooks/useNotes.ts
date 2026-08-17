@@ -7,20 +7,25 @@ import { supabase, type NoteRow, type NoteLinkRow } from '@/lib/supabase'
 // ─── types ────────────────────────────────────────────────────────────────────
 
 export type NoteColor = 'default' | 'amber' | 'emerald' | 'violet' | 'rose' | 'blue'
+export type NoteScope = 'work' | 'personal' | 'general'
 
 export type Note = {
   id: string
   title: string
   text: string
   color?: NoteColor
+  scope?: NoteScope
   pinned?: boolean
+  isPrivate?: boolean
   createdAt: number
   updatedAt: number
 }
 
 type ExtendedNoteRow = NoteRow & {
   color?: NoteColor
+  scope?: NoteScope
   pinned?: boolean
+  is_private?: boolean
 }
 
 function rowToNote(row: ExtendedNoteRow): Note {
@@ -29,7 +34,9 @@ function rowToNote(row: ExtendedNoteRow): Note {
     title:     row.title,
     text:      row.text,
     color:     row.color ?? 'default',
+    scope:     row.scope ?? 'general',
     pinned:    Boolean(row.pinned),
+    isPrivate: Boolean(row.is_private),
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   }
@@ -75,7 +82,14 @@ export function useNotes(user: User | null) {
 
   // ── add ────────────────────────────────────────────────────────────────────
 
-  const addNote = useCallback(async (title: string, text: string, color: NoteColor = 'default', pinned = false) => {
+  const addNote = useCallback(async (
+    title: string,
+    text: string,
+    color: NoteColor = 'default',
+    pinned = false,
+    scope: NoteScope = 'general',
+    isPrivate = false
+  ) => {
     if (!user) return
 
     const now = new Date().toISOString()
@@ -84,7 +98,9 @@ export function useNotes(user: User | null) {
       title,
       text,
       color,
+      scope,
       pinned,
+      isPrivate,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
@@ -100,17 +116,16 @@ export function useNotes(user: User | null) {
     if (error || !data) {
       setNotes((prev) => prev.filter((n) => n.id !== optimistic.id))
     } else {
-      setNotes((prev) => prev.map((n) => n.id === optimistic.id ? { ...rowToNote(data), color, pinned } : n))
+      setNotes((prev) => prev.map((n) => n.id === optimistic.id ? { ...rowToNote(data), color, scope, pinned, isPrivate } : n))
     }
   }, [user])
 
   // ── update ─────────────────────────────────────────────────────────────────
 
-  const updateNote = useCallback(async (id: string, fields: { title?: string; text?: string; color?: NoteColor; pinned?: boolean }) => {
+  const updateNote = useCallback(async (id: string, fields: { title?: string; text?: string; color?: NoteColor; scope?: NoteScope; pinned?: boolean; isPrivate?: boolean }) => {
     const updatedAt = Date.now()
     setNotes((prev) => prev.map((n) => n.id === id ? { ...n, ...fields, updatedAt } : n))
 
-    // Send standard fields to supabase
     const payload: Record<string, unknown> = { updated_at: new Date(updatedAt).toISOString() }
     if (fields.title !== undefined) payload.title = fields.title
     if (fields.text !== undefined) payload.text = fields.text
@@ -125,6 +140,12 @@ export function useNotes(user: User | null) {
 
   const togglePinNote = useCallback((id: string) => {
     setNotes((prev) => prev.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n))
+  }, [])
+
+  // ── toggle private / hidden ────────────────────────────────────────────────
+
+  const togglePrivateNote = useCallback((id: string) => {
+    setNotes((prev) => prev.map((n) => n.id === id ? { ...n, isPrivate: !n.isPrivate } : n))
   }, [])
 
   // ── delete ─────────────────────────────────────────────────────────────────
@@ -172,6 +193,7 @@ export function useNotes(user: User | null) {
     addNote,
     updateNote,
     togglePinNote,
+    togglePrivateNote,
     deleteNote,
     linkTodo,
     unlinkTodo,

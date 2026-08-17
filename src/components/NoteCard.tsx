@@ -1,10 +1,10 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Trash2, Link2, Pin, Palette, Clock, FileText } from 'lucide-react'
+import { Trash2, Link2, Pin, Palette, Clock, FileText, Lock, Eye, EyeOff, Briefcase, Home } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
-import type { Note, NoteColor } from '@/hooks/useNotes'
+import type { Note, NoteColor, NoteScope } from '@/hooks/useNotes'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 type NoteCardProps = {
@@ -14,7 +14,9 @@ type NoteCardProps = {
   onOpen: () => void
   onDelete: () => void
   onTogglePin?: () => void
+  onTogglePrivate?: () => void
   onChangeColor?: (color: NoteColor) => void
+  onChangeScope?: (scope: NoteScope) => void
   className?: string
 }
 
@@ -75,7 +77,9 @@ export default function NoteCard({
   onOpen,
   onDelete,
   onTogglePin,
+  onTogglePrivate,
   onChangeColor,
+  onChangeScope,
   className,
 }: NoteCardProps) {
   const colorCfg = NOTE_COLOR_CONFIG[note.color ?? 'default']
@@ -100,6 +104,7 @@ export default function NoteCard({
         className={cn(
           'group relative flex items-center justify-between gap-4 rounded-xl border p-3 cursor-pointer shadow-2xs transition-all hover:shadow-md',
           colorCfg.card,
+          note.isPrivate && 'border-dashed border-purple-400/50 dark:border-purple-600/40',
           className
         )}
       >
@@ -127,6 +132,28 @@ export default function NoteCard({
               <h3 className={cn('text-sm font-semibold truncate', !note.title && 'italic text-muted-foreground/60')}>
                 {note.title || 'Untitled note'}
               </h3>
+
+              {note.scope && note.scope !== 'general' && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.2 text-[9px] font-medium flex items-center gap-0.5',
+                    note.scope === 'work'
+                      ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
+                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                  )}
+                >
+                  {note.scope === 'work' ? <Briefcase className="h-2.5 w-2.5" /> : <Home className="h-2.5 w-2.5" />}
+                  {note.scope}
+                </span>
+              )}
+
+              {note.isPrivate && (
+                <span className="rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 px-1.5 py-0.2 text-[9px] font-semibold flex items-center gap-0.5" title="Private Note">
+                  <Lock className="h-2.5 w-2.5" />
+                  Private
+                </span>
+              )}
+
               {note.color && note.color !== 'default' && (
                 <span className={cn('rounded-full px-1.5 py-0.2 text-[9px] font-medium', colorCfg.chip)}>
                   {colorCfg.label.split(' / ')[0]}
@@ -150,8 +177,23 @@ export default function NoteCard({
             {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
           </span>
 
-          {/* Action Menu */}
+          {/* Action Toolbar */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onTogglePrivate && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onTogglePrivate()
+                }}
+                className={cn(
+                  'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+                  note.isPrivate ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+                title={note.isPrivate ? 'Make Public' : 'Make Private / Hide'}
+              >
+                {note.isPrivate ? <Lock className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -187,25 +229,69 @@ export default function NoteCard({
       className={cn(
         'group relative flex h-56 cursor-pointer flex-col justify-between rounded-2xl border p-4 text-left shadow-sm transition-all hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
         colorCfg.card,
+        note.isPrivate && 'border-dashed border-purple-400/60 dark:border-purple-600/40',
         className
       )}
     >
-      {/* Top Bar: Title & Pin/Color Controls */}
+      {/* Top Bar: Title & Scope Badges */}
       <div>
-        <div className="flex items-start justify-between gap-2 pr-12">
-          <h3 className={cn('text-sm font-bold leading-snug line-clamp-1', !note.title && 'italic text-muted-foreground/60')}>
-            {note.title || 'Untitled note'}
-          </h3>
+        <div className="flex items-start justify-between gap-2 pr-16">
+          <div className="space-y-1 min-w-0">
+            <h3 className={cn('text-sm font-bold leading-snug line-clamp-1', !note.title && 'italic text-muted-foreground/60')}>
+              {note.title || 'Untitled note'}
+            </h3>
+
+            <div className="flex items-center gap-1 flex-wrap">
+              {note.scope && note.scope !== 'general' && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.2 text-[9px] font-medium flex items-center gap-0.5',
+                    note.scope === 'work'
+                      ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
+                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                  )}
+                >
+                  {note.scope === 'work' ? <Briefcase className="h-2.5 w-2.5" /> : <Home className="h-2.5 w-2.5" />}
+                  {note.scope}
+                </span>
+              )}
+
+              {note.isPrivate && (
+                <span className="rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 px-1.5 py-0.2 text-[9px] font-semibold flex items-center gap-0.5" title="Private Note">
+                  <Lock className="h-2.5 w-2.5" />
+                  Private
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Note Body Preview */}
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-[5] whitespace-pre-wrap font-normal">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground line-clamp-[4] whitespace-pre-wrap font-normal">
           {note.text || 'Empty note'}
         </p>
       </div>
 
       {/* Action Bar (Top Right) */}
       <div className="absolute right-2.5 top-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onTogglePrivate && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onTogglePrivate()
+            }}
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+              note.isPrivate
+                ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+            title={note.isPrivate ? 'Make Public' : 'Make Private / Hide'}
+          >
+            {note.isPrivate ? <Lock className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          </button>
+        )}
+
         {onTogglePin && (
           <button
             onClick={(e) => {

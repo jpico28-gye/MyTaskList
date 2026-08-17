@@ -4,10 +4,10 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
-import { Trash2, X, Check, Pin, Palette, FileText } from 'lucide-react'
+import { Trash2, X, Check, Pin, Palette, FileText, Lock, EyeOff, Briefcase, Home, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TaskLinkPicker from '@/components/TaskLinkPicker'
-import type { Note, NoteColor } from '@/hooks/useNotes'
+import type { Note, NoteColor, NoteScope } from '@/hooks/useNotes'
 import type { Todo } from '@/components/TodoItem'
 import { NOTE_COLOR_CONFIG, getReadingTime } from '@/components/NoteCard'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -20,8 +20,8 @@ type NoteEditorModalProps = {
   note: Note | null
   allTodos: Todo[]
   linkedIds: string[]
-  onCreate: (title: string, text: string, color?: NoteColor, pinned?: boolean) => void
-  onUpdate: (id: string, fields: { title?: string; text?: string; color?: NoteColor; pinned?: boolean }) => void
+  onCreate: (title: string, text: string, color?: NoteColor, pinned?: boolean, scope?: NoteScope, isPrivate?: boolean) => void
+  onUpdate: (id: string, fields: { title?: string; text?: string; color?: NoteColor; scope?: NoteScope; pinned?: boolean; isPrivate?: boolean }) => void
   onDelete: (id: string) => void
   onToggleLink: (noteId: string, todoId: string) => void
   onCreateTask: (noteId: string, text: string) => Promise<void>
@@ -35,7 +35,9 @@ export default function NoteEditorModal({
   const [title, setTitle] = useState('')
   const [text, setText] = useState('')
   const [color, setColor] = useState<NoteColor>('default')
+  const [scope, setScope] = useState<NoteScope>('general')
   const [pinned, setPinned] = useState(false)
+  const [isPrivate, setIsPrivate] = useState(false)
 
   const isNew = note === null
 
@@ -47,12 +49,14 @@ export default function NoteEditorModal({
     setTitle(note?.title ?? '')
     setText(note?.text ?? '')
     setColor(note?.color ?? 'default')
+    setScope(note?.scope ?? 'general')
     setPinned(Boolean(note?.pinned))
+    setIsPrivate(Boolean(note?.isPrivate))
   }, [open, note])
 
   // Latest values for commit-on-close without re-running the effect each keystroke.
-  const latest = useRef({ title, text, color, pinned })
-  latest.current = { title, text, color, pinned }
+  const latest = useRef({ title, text, color, scope, pinned, isPrivate })
+  latest.current = { title, text, color, scope, pinned, isPrivate }
 
   useEffect(() => {
     if (!open) return
@@ -70,13 +74,17 @@ export default function NoteEditorModal({
     const t = latest.current.title.trim()
     const b = latest.current.text
     const c = latest.current.color
+    const s = latest.current.scope
     const p = latest.current.pinned
+    const prv = latest.current.isPrivate
 
-    const fields: { title?: string; text?: string; color?: NoteColor; pinned?: boolean } = {}
+    const fields: { title?: string; text?: string; color?: NoteColor; scope?: NoteScope; pinned?: boolean; isPrivate?: boolean } = {}
     if (t !== note.title) fields.title = t
     if (b !== note.text) fields.text = b
     if (c !== note.color) fields.color = c
+    if (s !== note.scope) fields.scope = s
     if (p !== note.pinned) fields.pinned = p
+    if (prv !== note.isPrivate) fields.isPrivate = prv
 
     if (Object.keys(fields).length > 0) onUpdate(note.id, fields)
   }
@@ -88,7 +96,7 @@ export default function NoteEditorModal({
 
   function handleCreate() {
     if (!title.trim() && !text.trim()) { onClose(); return }
-    onCreate(title.trim(), text, color, pinned)
+    onCreate(title.trim(), text, color, pinned, scope, isPrivate)
     onClose()
   }
 
@@ -129,6 +137,25 @@ export default function NoteEditorModal({
               </div>
 
               <div className="flex items-center gap-1.5">
+                {/* Private / Hide Toggle */}
+                <button
+                  onClick={() => {
+                    const next = !isPrivate
+                    setIsPrivate(next)
+                    if (!isNew && note) onUpdate(note.id, { isPrivate: next })
+                  }}
+                  className={cn(
+                    'flex h-7 px-2 items-center gap-1 rounded-lg text-xs font-medium transition-colors',
+                    isPrivate
+                      ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 font-semibold'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                  title={isPrivate ? 'Private / Hidden Note' : 'Make Private'}
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>{isPrivate ? 'Private' : 'Public'}</span>
+                </button>
+
                 {/* Pin Toggle */}
                 <button
                   onClick={() => {
@@ -185,6 +212,53 @@ export default function NoteEditorModal({
                   <X className="h-4 w-4" />
                 </button>
               </div>
+            </div>
+
+            {/* Scope / Context Selector Row */}
+            <div className="flex items-center gap-1.5 px-4 pt-2.5">
+              <span className="text-[11px] font-medium text-muted-foreground">Scope:</span>
+              <button
+                onClick={() => {
+                  setScope('general')
+                  if (!isNew && note) onUpdate(note.id, { scope: 'general' })
+                }}
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-colors',
+                  scope === 'general'
+                    ? 'border-primary bg-primary/10 text-primary font-semibold'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Globe className="h-3 w-3" /> General
+              </button>
+              <button
+                onClick={() => {
+                  setScope('work')
+                  if (!isNew && note) onUpdate(note.id, { scope: 'work' })
+                }}
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-colors',
+                  scope === 'work'
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Briefcase className="h-3 w-3" /> Work 💼
+              </button>
+              <button
+                onClick={() => {
+                  setScope('personal')
+                  if (!isNew && note) onUpdate(note.id, { scope: 'personal' })
+                }}
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-colors',
+                  scope === 'personal'
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Home className="h-3 w-3" /> Personal 🏠
+              </button>
             </div>
 
             {/* Body */}

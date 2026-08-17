@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   PlusCircle, Search, X, ListTodo, Sparkles, ChevronRight,
-  LayoutGrid, List, Pin, Palette, Check, FileText, CornerDownLeft
+  LayoutGrid, List, Pin, Palette, Check, FileText, Lock, Eye, EyeOff,
+  Briefcase, Home, Globe, Shield
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
@@ -13,7 +14,7 @@ import NoteCard, { NOTE_COLOR_CONFIG } from '@/components/NoteCard'
 import NoteEditorModal from '@/components/NoteEditorModal'
 import AiNoteModal from '@/components/AiNoteModal'
 import EmptyState from '@/components/EmptyState'
-import type { Note, NoteColor } from '@/hooks/useNotes'
+import type { Note, NoteColor, NoteScope } from '@/hooks/useNotes'
 import type { Todo } from '@/components/TodoItem'
 import type { NewTodoInput } from '@/hooks/useTodos'
 import { cn } from '@/lib/utils'
@@ -24,9 +25,10 @@ type NotesViewProps = {
   todos: Todo[]
   filterTodoId: string | null
   onClearFilter: () => void
-  addNote: (title: string, text: string, color?: NoteColor, pinned?: boolean) => void
-  updateNote: (id: string, fields: { title?: string; text?: string; color?: NoteColor; pinned?: boolean }) => void
+  addNote: (title: string, text: string, color?: NoteColor, pinned?: boolean, scope?: NoteScope, isPrivate?: boolean) => void
+  updateNote: (id: string, fields: { title?: string; text?: string; color?: NoteColor; scope?: NoteScope; pinned?: boolean; isPrivate?: boolean }) => void
   togglePinNote?: (id: string) => void
+  togglePrivateNote?: (id: string) => void
   deleteNote: (id: string) => void
   linkTodo: (noteId: string, todoId: string) => void
   unlinkTodo: (noteId: string, todoId: string) => void
@@ -35,7 +37,7 @@ type NotesViewProps = {
 
 export default function NotesView({
   notes, links, todos, filterTodoId, onClearFilter,
-  addNote, updateNote, togglePinNote, deleteNote, linkTodo, unlinkTodo, addTodo,
+  addNote, updateNote, togglePinNote, togglePrivateNote, deleteNote, linkTodo, unlinkTodo, addTodo,
 }: NotesViewProps) {
   const [aiOpen,         setAiOpen]         = useState(false)
   const [editing,        setEditing]        = useState<'new' | string | null>(null)
@@ -43,10 +45,18 @@ export default function NotesView({
   const [layoutMode,     setLayoutMode]     = useState<'grid' | 'list'>('grid')
   const [colorFilter,    setColorFilter]    = useState<NoteColor | 'all'>('all')
 
+  // Personal / Work Workspace Scope Toggle ('all' | 'work' | 'personal')
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'work' | 'personal'>('all')
+
+  // Show / Hide Private Notes Toggle (default false = hidden)
+  const [showPrivate, setShowPrivate] = useState(false)
+
   // Inline Quick Note State
-  const [quickTitle, setQuickTitle] = useState('')
-  const [quickText,  setQuickText]  = useState('')
-  const [quickColor, setQuickColor] = useState<NoteColor>('default')
+  const [quickTitle,   setQuickTitle]   = useState('')
+  const [quickText,    setQuickText]    = useState('')
+  const [quickColor,   setQuickColor]   = useState<NoteColor>('default')
+  const [quickScope,   setQuickScope]   = useState<NoteScope>('general')
+  const [quickPrivate, setQuickPrivate] = useState(false)
 
   const filterTodo = filterTodoId ? todos.find((t) => t.id === filterTodoId) ?? null : null
 
@@ -71,33 +81,58 @@ export default function NotesView({
 
   const handleQuickCreate = () => {
     if (!quickTitle.trim() && !quickText.trim()) return
-    addNote(quickTitle.trim() || 'Quick Note', quickText.trim(), quickColor)
+    addNote(
+      quickTitle.trim() || 'Quick Note',
+      quickText.trim(),
+      quickColor,
+      false,
+      quickScope,
+      quickPrivate
+    )
     setQuickTitle('')
     setQuickText('')
     setQuickColor('default')
+    setQuickScope('general')
+    setQuickPrivate(false)
   }
 
   const editingNote = typeof editing === 'string' ? notes.find((n) => n.id === editing) ?? null : null
 
-  // Filtered Notes
+  // Filtered Notes based on Search, Task Filter, Color Filter, Scope Filter, and Private Hiding
   const filtered = useMemo(() => {
     let result = notes
 
+    // 1. Task filter
     if (filterTodoId) {
       result = result.filter((n) => links[n.id]?.includes(filterTodoId))
     }
 
+    // 2. Scope filter (Work vs Personal vs All)
+    if (scopeFilter !== 'all') {
+      result = result.filter((n) => (n.scope ?? 'general') === scopeFilter)
+    }
+
+    // 3. Color theme filter
     if (colorFilter !== 'all') {
       result = result.filter((n) => (n.color ?? 'default') === colorFilter)
     }
 
+    // 4. Private / Hidden notes filter
+    if (!showPrivate) {
+      result = result.filter((n) => !n.isPrivate)
+    }
+
+    // 5. Search query
     const q = search.trim().toLowerCase()
     if (q) {
       result = result.filter((n) => n.title.toLowerCase().includes(q) || n.text.toLowerCase().includes(q))
     }
 
     return result
-  }, [notes, links, filterTodoId, colorFilter, search])
+  }, [notes, links, filterTodoId, scopeFilter, colorFilter, showPrivate, search])
+
+  // Private Note Count
+  const privateCount = useMemo(() => notes.filter((n) => n.isPrivate).length, [notes])
 
   // Pinned vs Regular Notes
   const { pinnedNotes, unpinnedNotes } = useMemo(() => {
@@ -111,14 +146,14 @@ export default function NotesView({
   }, [filtered])
 
   function emptyVariant() {
-    if (search.trim() || filterTodoId || colorFilter !== 'all') return 'no-note-match' as const
+    if (search.trim() || filterTodoId || colorFilter !== 'all' || scopeFilter !== 'all') return 'no-note-match' as const
     return 'no-notes' as const
   }
 
   // Time-based shelves for unpinned notes
   const groups = useMemo(() => {
-    const isFiltering = !!(search.trim() || filterTodoId || colorFilter !== 'all')
-    if (isFiltering) return [{ key: 'results', label: 'All Matching Notes', notes: unpinnedNotes }]
+    const isFiltering = !!(search.trim() || filterTodoId || colorFilter !== 'all' || scopeFilter !== 'all')
+    if (isFiltering) return [{ key: 'results', label: 'Filtered Notes', notes: unpinnedNotes }]
 
     const now = Date.now()
     const WEEK = 7 * 86_400_000
@@ -133,10 +168,72 @@ export default function NotesView({
       map.get(key)!.notes.push(n)
     }
     return order.map((k) => ({ key: k, label: map.get(k)!.label, notes: map.get(k)!.notes }))
-  }, [unpinnedNotes, search, filterTodoId, colorFilter])
+  }, [unpinnedNotes, search, filterTodoId, colorFilter, scopeFilter])
 
   return (
     <div className="space-y-6">
+      {/* ── Context Switcher: Work 💼 vs Personal 🏠 vs All ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/60 p-2 shadow-xs">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setScopeFilter('all')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all',
+              scopeFilter === 'all'
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <Globe className="h-3.5 w-3.5" />
+            All Notes
+          </button>
+          <button
+            onClick={() => setScopeFilter('work')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all',
+              scopeFilter === 'work'
+                ? 'bg-blue-600 text-white shadow-xs dark:bg-blue-500'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <Briefcase className="h-3.5 w-3.5" />
+            Work 💼
+          </button>
+          <button
+            onClick={() => setScopeFilter('personal')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all',
+              scopeFilter === 'personal'
+                ? 'bg-emerald-600 text-white shadow-xs dark:bg-emerald-500'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <Home className="h-3.5 w-3.5" />
+            Personal 🏠
+          </button>
+        </div>
+
+        {/* Private / Hide Notes Toggle Button */}
+        <button
+          onClick={() => setShowPrivate(!showPrivate)}
+          className={cn(
+            'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors border',
+            showPrivate
+              ? 'border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
+              : 'border-border bg-background text-muted-foreground hover:text-foreground'
+          )}
+          title={showPrivate ? 'Private notes are visible' : 'Private notes are hidden'}
+        >
+          {showPrivate ? <Eye className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" /> : <EyeOff className="h-3.5 w-3.5" />}
+          <span>{showPrivate ? 'Private Visible' : 'Hide Private Notes'}</span>
+          {privateCount > 0 && (
+            <span className="rounded-full bg-purple-500/20 px-1.5 py-0.2 text-[10px] font-bold">
+              {privateCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* ── Quick Inline Note Composer Card ── */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
@@ -184,24 +281,41 @@ export default function NotesView({
         />
 
         {(quickTitle.trim() || quickText.trim()) && (
-          <div className="flex items-center justify-between pt-1 border-t border-border/40">
-            {/* Color accent selector for quick note */}
-            <div className="flex items-center gap-1">
-              {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).map((c) => {
-                const cfg = NOTE_COLOR_CONFIG[c]
-                return (
-                  <button
-                    key={c}
-                    onClick={() => setQuickColor(c)}
-                    className={cn(
-                      'h-4 w-4 rounded-full border transition-transform hover:scale-110',
-                      cfg.border,
-                      quickColor === c && 'ring-2 ring-primary'
-                    )}
-                    title={cfg.label}
-                  />
-                )
-              })}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40">
+            <div className="flex items-center gap-2">
+              {/* Scope selector */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setQuickScope('work')}
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors',
+                    quickScope === 'work' ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold' : 'text-muted-foreground'
+                  )}
+                >
+                  💼 Work
+                </button>
+                <button
+                  onClick={() => setQuickScope('personal')}
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors',
+                    quickScope === 'personal' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-muted-foreground'
+                  )}
+                >
+                  🏠 Personal
+                </button>
+              </div>
+
+              {/* Private toggle */}
+              <button
+                onClick={() => setQuickPrivate(!quickPrivate)}
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors',
+                  quickPrivate ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold' : 'text-muted-foreground'
+                )}
+                title="Mark as Private"
+              >
+                <Lock className="h-2.5 w-2.5" /> Private
+              </button>
             </div>
 
             <Button size="sm" onClick={handleQuickCreate} className="h-7 rounded-lg text-xs px-3">
@@ -278,7 +392,7 @@ export default function NotesView({
                 : 'border-border text-muted-foreground hover:border-muted-foreground/50'
             )}
           >
-            All Notes ({notes.length})
+            All Themes ({notes.length})
           </button>
           {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).filter(c => c !== 'default').map((c) => {
             const cfg = NOTE_COLOR_CONFIG[c]
@@ -347,7 +461,9 @@ export default function NotesView({
                   onOpen={() => setEditing(note.id)}
                   onDelete={() => deleteNote(note.id)}
                   onTogglePin={() => (togglePinNote ? togglePinNote(note.id) : updateNote(note.id, { pinned: !note.pinned }))}
+                  onTogglePrivate={() => (togglePrivateNote ? togglePrivateNote(note.id) : updateNote(note.id, { isPrivate: !note.isPrivate }))}
                   onChangeColor={(c) => updateNote(note.id, { color: c })}
+                  onChangeScope={(s) => updateNote(note.id, { scope: s })}
                 />
               ))}
             </AnimatePresence>
@@ -388,7 +504,9 @@ export default function NotesView({
                         onOpen={() => setEditing(note.id)}
                         onDelete={() => deleteNote(note.id)}
                         onTogglePin={() => (togglePinNote ? togglePinNote(note.id) : updateNote(note.id, { pinned: !note.pinned }))}
+                        onTogglePrivate={() => (togglePrivateNote ? togglePrivateNote(note.id) : updateNote(note.id, { isPrivate: !note.isPrivate }))}
                         onChangeColor={(c) => updateNote(note.id, { color: c })}
+                        onChangeScope={(s) => updateNote(note.id, { scope: s })}
                       />
                     ))}
                   </AnimatePresence>
