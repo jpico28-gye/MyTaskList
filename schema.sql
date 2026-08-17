@@ -120,6 +120,11 @@ create table if not exists public.notes (
   updated_at timestamptz not null default now()
 );
 
+alter table public.notes add column if not exists scope text default 'general';
+alter table public.notes add column if not exists color text default 'default';
+alter table public.notes add column if not exists pinned boolean default false;
+alter table public.notes add column if not exists is_private boolean default false;
+
 create index if not exists notes_user_id_idx on public.notes (user_id, updated_at desc);
 
 alter table public.notes enable row level security;
