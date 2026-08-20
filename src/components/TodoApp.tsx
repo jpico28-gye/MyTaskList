@@ -78,7 +78,7 @@ export default function TodoApp() {
 
   const [input,            setInput]            = useState('')
   const [search,           setSearch]           = useState('')
-  const [filter,           setFilter]           = useState<Filter>('all')
+  const [filter,           setFilter]           = useState<Filter>('active')
   const [sortMode,         setSortMode]         = useState<SortMode>('manual')
   const [activeTags,       setActiveTags]       = useState<string[]>([])
   const [selectedDay,      setSelectedDay]      = useState<Date | null>(null)
@@ -210,16 +210,16 @@ export default function TodoApp() {
         setView('tasks')
         if (sv === 'today') {
           setSelectedDay(parseDateStr(todayStr))
-          setFilter('all')
+          setFilter('active')
         } else if (sv === 'all') {
           setSelectedDay(null)
-          setFilter('all')
+          setFilter('active')
         } else if (sv === 'completed') {
           setFilter('completed')
           setSelectedDay(null)
         } else {
           setSelectedDay(null)
-          setFilter('all')
+          setFilter('active')
         }
       }
     },
