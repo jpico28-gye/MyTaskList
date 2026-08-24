@@ -192,17 +192,33 @@ export default function DueDatePicker({
                     initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }} className="overflow-hidden"
                   >
-                    <div className="relative mt-2 flex items-center justify-center gap-2">
-                      {/* center selection band */}
-                      <div className="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 rounded-xl border-y border-border bg-primary/5" style={{ height: 36 }} />
-                      <WheelColumn label="Hour" values={range(12, 1)} value={hour12} onChange={setHour12} />
-                      <WheelColumn label="Min" values={range(60)} value={minute} onChange={setMinute} format={pad2} />
-                      {/* AM / PM */}
-                      <div className="flex flex-col gap-1 self-center">
+                    <div className="mt-3 flex items-center justify-center gap-4">
+                      {/* Hour & Minute Wheels with isolated selection band */}
+                      <div className="relative flex items-center justify-center gap-1 px-2">
+                        {/* Center selection band (scoped strictly to wheels) */}
+                        <div
+                          className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-xl border-y border-primary/30 bg-primary/10"
+                          style={{ height: 36 }}
+                        />
+                        <WheelColumn label="Hour" values={range(12, 1)} value={hour12} onChange={setHour12} />
+                        <span className="text-sm font-bold text-muted-foreground/60 mt-4 select-none">:</span>
+                        <WheelColumn label="Min" values={range(60)} value={minute} onChange={setMinute} format={pad2} />
+                      </div>
+
+                      {/* AM / PM Toggle Pills */}
+                      <div className="flex flex-col gap-1.5 self-center pt-3 z-10">
                         {(['AM', 'PM'] as const).map((m) => (
-                          <button key={m} onClick={() => setMeridiem(m)}
-                            className={cn('rounded-lg px-3 py-1 text-xs font-semibold transition-colors',
-                              meridiem === m ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground')}>
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setMeridiem(m)}
+                            className={cn(
+                              'rounded-xl px-3 py-1.5 text-xs font-bold transition-all shadow-2xs',
+                              meridiem === m
+                                ? 'bg-primary text-primary-foreground shadow-xs scale-105'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                            )}
+                          >
                             {m}
                           </button>
                         ))}
