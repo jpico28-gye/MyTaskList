@@ -118,11 +118,13 @@ export default function NoteEditorModal({
             role="dialog" aria-modal="true" aria-label={isNew ? 'New note' : 'Edit note'}
             initial={{ y: '4%', opacity: 0.6 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '4%', opacity: 0.4 }}
             transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-            className={cn(
-              'relative flex max-h-[92vh] w-full flex-col rounded-t-3xl border shadow-2xl sm:max-h-[85vh] sm:max-w-2xl sm:rounded-2xl transition-colors',
-              colorCfg.card
-            )}
+            className="relative flex max-h-[92vh] w-full flex-col rounded-t-3xl border border-border bg-card shadow-2xl sm:max-h-[85vh] sm:max-w-2xl sm:rounded-2xl overflow-hidden"
           >
+            {/* Top Accent Stripe if colored */}
+            {color !== 'default' && (
+              <div className={cn('h-1.5 w-full shrink-0', colorCfg.bar)} />
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -181,25 +183,28 @@ export default function NoteEditorModal({
                   >
                     <Palette className="h-3.5 w-3.5" />
                   </PopoverTrigger>
-                  <PopoverContent className="w-44 p-1.5" align="end">
-                    <div className="grid grid-cols-3 gap-1">
+                  <PopoverContent className="w-48 p-2 rounded-2xl shadow-xl border border-border bg-card" align="end">
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">Note Theme</div>
+                    <div className="grid grid-cols-6 gap-1.5">
                       {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).map((c) => {
                         const cfg = NOTE_COLOR_CONFIG[c]
+                        const selected = color === c
                         return (
                           <button
                             key={c}
+                            type="button"
                             onClick={() => {
                               setColor(c)
                               if (!isNew && note) onUpdate(note.id, { color: c })
                             }}
                             className={cn(
-                              'flex h-7 w-full items-center justify-center rounded-lg border text-[10px] font-medium transition-transform hover:scale-105',
-                              cfg.card,
-                              color === c && 'ring-2 ring-primary/40'
+                              'flex h-6 w-6 items-center justify-center rounded-full transition-all hover:scale-110 focus:outline-none',
+                              cfg.dot,
+                              selected ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-xs' : 'opacity-85 hover:opacity-100'
                             )}
                             title={cfg.label}
                           >
-                            <span className={cn('h-2 w-2 rounded-full', cfg.border)} />
+                            {selected && <Check className="h-3 w-3 text-white stroke-[3]" />}
                           </button>
                         )
                       })}

@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Trash2, Link2, Pin, Palette, FileText, Lock, EyeOff, Briefcase, Home } from 'lucide-react'
+import { Trash2, Link2, Pin, Palette, FileText, Lock, EyeOff, Briefcase, Home, Check } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { Note, NoteColor, NoteScope } from '@/hooks/useNotes'
@@ -22,49 +22,55 @@ type NoteCardProps = {
 
 export const NOTE_COLOR_CONFIG: Record<
   NoteColor,
-  { label: string; chip: string; card: string; border: string; accent: string }
+  { name: string; label: string; chip: string; card: string; dot: string; bar: string }
 > = {
   default: {
+    name: 'Default',
     label: 'Default',
-    chip: 'bg-muted text-muted-foreground border-border',
+    chip: 'bg-muted text-muted-foreground border-border/50',
     card: 'border-border/80 bg-card',
-    border: 'bg-muted-foreground',
-    accent: '',
+    dot: 'bg-slate-400 dark:bg-slate-500',
+    bar: 'bg-border',
   },
   amber: {
+    name: 'Amber',
     label: 'Amber / Idea',
-    chip: 'bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700',
-    card: 'border-amber-300 dark:border-amber-700/60 bg-amber-500/10 dark:bg-amber-950/30 border-l-4 border-l-amber-500',
-    border: 'bg-amber-500',
-    accent: 'text-amber-600 dark:text-amber-400',
+    chip: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300/40 dark:border-amber-700/40',
+    card: 'border-amber-200/80 dark:border-amber-800/40 bg-amber-50/40 dark:bg-amber-950/20 border-l-4 border-l-amber-500',
+    dot: 'bg-amber-500',
+    bar: 'bg-amber-500',
   },
   emerald: {
+    name: 'Emerald',
     label: 'Emerald / Journal',
-    chip: 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700',
-    card: 'border-emerald-300 dark:border-emerald-700/60 bg-emerald-500/10 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500',
-    border: 'bg-emerald-500',
-    accent: 'text-emerald-600 dark:text-emerald-400',
+    chip: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300/40 dark:border-emerald-700/40',
+    card: 'border-emerald-200/80 dark:border-emerald-800/40 bg-emerald-50/40 dark:bg-emerald-950/20 border-l-4 border-l-emerald-500',
+    dot: 'bg-emerald-500',
+    bar: 'bg-emerald-500',
   },
   violet: {
+    name: 'Violet',
     label: 'Violet / Project',
-    chip: 'bg-violet-500/20 text-violet-800 dark:text-violet-200 border-violet-300 dark:border-violet-700',
-    card: 'border-violet-300 dark:border-violet-700/60 bg-violet-500/10 dark:bg-violet-950/30 border-l-4 border-l-violet-500',
-    border: 'bg-violet-500',
-    accent: 'text-violet-600 dark:text-violet-400',
+    chip: 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-300/40 dark:border-violet-700/40',
+    card: 'border-violet-200/80 dark:border-violet-800/40 bg-violet-50/40 dark:bg-violet-950/20 border-l-4 border-l-violet-500',
+    dot: 'bg-violet-500',
+    bar: 'bg-violet-500',
   },
   rose: {
+    name: 'Rose',
     label: 'Rose / Important',
-    chip: 'bg-rose-500/20 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-700',
-    card: 'border-rose-300 dark:border-rose-700/60 bg-rose-500/10 dark:bg-rose-950/30 border-l-4 border-l-rose-500',
-    border: 'bg-rose-500',
-    accent: 'text-rose-600 dark:text-rose-400',
+    chip: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-300/40 dark:border-rose-700/40',
+    card: 'border-rose-200/80 dark:border-rose-800/40 bg-rose-50/40 dark:bg-rose-950/20 border-l-4 border-l-rose-500',
+    dot: 'bg-rose-500',
+    bar: 'bg-rose-500',
   },
   blue: {
+    name: 'Blue',
     label: 'Blue / Reference',
-    chip: 'bg-blue-500/20 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-700',
-    card: 'border-blue-300 dark:border-blue-700/60 bg-blue-500/10 dark:bg-blue-950/30 border-l-4 border-l-blue-500',
-    border: 'bg-blue-500',
-    accent: 'text-blue-600 dark:text-blue-400',
+    chip: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300/40 dark:border-blue-700/40',
+    card: 'border-blue-200/80 dark:border-blue-800/40 bg-blue-50/40 dark:bg-blue-950/20 border-l-4 border-l-blue-500',
+    dot: 'bg-blue-500',
+    bar: 'bg-blue-500',
   },
 }
 
@@ -169,7 +175,7 @@ export default function NoteCard({
 
                 {note.color && note.color !== 'default' && (
                   <span className={cn('rounded-full border px-1.5 py-0.2 text-[9px] font-semibold shrink-0', colorCfg.chip)}>
-                    {colorCfg.label.split(' / ')[0]}
+                    {colorCfg.name}
                   </span>
                 )}
               </div>
@@ -200,25 +206,28 @@ export default function NoteCard({
                   >
                     <Palette className="h-3.5 w-3.5" />
                   </PopoverTrigger>
-                  <PopoverContent className="w-40 p-1.5" align="end" onClick={(e) => e.stopPropagation()}>
-                    <div className="grid grid-cols-3 gap-1">
+                  <PopoverContent className="w-48 p-2 rounded-2xl shadow-xl border border-border bg-card" align="end" onClick={(e) => e.stopPropagation()}>
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">Note Theme</div>
+                    <div className="grid grid-cols-6 gap-1.5">
                       {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).map((c) => {
                         const cfg = NOTE_COLOR_CONFIG[c]
+                        const selected = (note.color ?? 'default') === c
                         return (
                           <button
                             key={c}
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation()
                               onChangeColor(c)
                             }}
                             className={cn(
-                              'flex h-7 w-full items-center justify-center rounded-lg border text-[10px] font-medium transition-transform hover:scale-105',
-                              cfg.card,
-                              (note.color ?? 'default') === c && 'ring-2 ring-primary'
+                              'flex h-6 w-6 items-center justify-center rounded-full transition-all hover:scale-110 focus:outline-none',
+                              cfg.dot,
+                              selected ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-xs' : 'opacity-85 hover:opacity-100'
                             )}
                             title={cfg.label}
                           >
-                            <span className={cn('h-2.5 w-2.5 rounded-full', cfg.border)} />
+                            {selected && <Check className="h-3 w-3 text-white stroke-[3]" />}
                           </button>
                         )
                       })}
@@ -289,7 +298,7 @@ export default function NoteCard({
 
                   {note.color && note.color !== 'default' && (
                     <span className={cn('rounded-full border px-1.5 py-0.2 text-[9px] font-semibold', colorCfg.chip)}>
-                      {colorCfg.label.split(' / ')[0]}
+                      {colorCfg.name}
                     </span>
                   )}
                 </div>
@@ -348,25 +357,28 @@ export default function NoteCard({
                 >
                   <Palette className="h-3.5 w-3.5" />
                 </PopoverTrigger>
-                <PopoverContent className="w-40 p-1.5" align="end" onClick={(e) => e.stopPropagation()}>
-                  <div className="grid grid-cols-3 gap-1">
+                <PopoverContent className="w-48 p-2 rounded-2xl shadow-xl border border-border bg-card" align="end" onClick={(e) => e.stopPropagation()}>
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">Note Theme</div>
+                  <div className="grid grid-cols-6 gap-1.5">
                     {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).map((c) => {
                       const cfg = NOTE_COLOR_CONFIG[c]
+                      const selected = (note.color ?? 'default') === c
                       return (
                         <button
                           key={c}
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             onChangeColor(c)
                           }}
                           className={cn(
-                            'flex h-7 w-full items-center justify-center rounded-lg border text-[10px] font-medium transition-transform hover:scale-105',
-                            cfg.card,
-                            (note.color ?? 'default') === c && 'ring-2 ring-primary'
+                            'flex h-6 w-6 items-center justify-center rounded-full transition-all hover:scale-110 focus:outline-none',
+                            cfg.dot,
+                            selected ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-xs' : 'opacity-85 hover:opacity-100'
                           )}
                           title={cfg.label}
                         >
-                          <span className={cn('h-2.5 w-2.5 rounded-full', cfg.border)} />
+                          {selected && <Check className="h-3 w-3 text-white stroke-[3]" />}
                         </button>
                       )
                     })}

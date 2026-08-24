@@ -315,23 +315,25 @@ export default function NotesView({
                   <Palette className="h-2.5 w-2.5" />
                   <span>{NOTE_COLOR_CONFIG[quickColor].label.split(' / ')[0]}</span>
                 </PopoverTrigger>
-                <PopoverContent className="w-40 p-1.5" align="start">
-                  <div className="grid grid-cols-3 gap-1">
+                <PopoverContent className="w-48 p-2 rounded-2xl shadow-xl border border-border bg-card" align="start">
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">Note Theme</div>
+                  <div className="grid grid-cols-6 gap-1.5">
                     {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).map((c) => {
                       const cfg = NOTE_COLOR_CONFIG[c]
+                      const selected = quickColor === c
                       return (
                         <button
                           key={c}
                           type="button"
                           onClick={() => setQuickColor(c)}
                           className={cn(
-                            'flex h-7 w-full items-center justify-center rounded-lg border text-[10px] font-medium transition-transform hover:scale-105',
-                            cfg.card,
-                            quickColor === c && 'ring-2 ring-primary'
+                            'flex h-6 w-6 items-center justify-center rounded-full transition-all hover:scale-110 focus:outline-none',
+                            cfg.dot,
+                            selected ? 'ring-2 ring-offset-2 ring-primary scale-110 shadow-xs' : 'opacity-85 hover:opacity-100'
                           )}
                           title={cfg.label}
                         >
-                          <span className={cn('h-2.5 w-2.5 rounded-full', cfg.border)} />
+                          {selected && <Check className="h-3 w-3 text-white stroke-[3]" />}
                         </button>
                       )
                     })}
@@ -443,7 +445,7 @@ export default function NotesView({
                   active ? cn(cfg.chip, 'border-transparent ring-2 ring-primary/30 font-semibold') : 'border-border text-muted-foreground hover:border-muted-foreground/50'
                 )}
               >
-                <span className={cn('h-1.5 w-1.5 rounded-full', cfg.border)} />
+                <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
                 {cfg.label.split(' / ')[0]}
                 <span className="text-[10px] opacity-70">({count})</span>
               </button>
