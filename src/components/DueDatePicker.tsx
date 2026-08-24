@@ -128,7 +128,7 @@ export default function DueDatePicker({
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
         >
-          <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity" />
 
           <motion.div
             role="dialog" aria-modal="true" aria-label={title}

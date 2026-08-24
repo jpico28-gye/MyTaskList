@@ -112,13 +112,13 @@ export default function NoteEditorModal({
           className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
         >
-          <button aria-label="Close" onClick={handleClose} className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <button aria-label="Close" onClick={handleClose} className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity" />
 
           <motion.div
             role="dialog" aria-modal="true" aria-label={isNew ? 'New note' : 'Edit note'}
             initial={{ y: '4%', opacity: 0.6 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '4%', opacity: 0.4 }}
             transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-            className="relative flex max-h-[92vh] w-full flex-col rounded-t-3xl border border-border bg-card shadow-2xl sm:max-h-[85vh] sm:max-w-2xl sm:rounded-2xl overflow-hidden"
+            className="relative flex max-h-[92vh] w-full flex-col rounded-t-3xl border border-border bg-card shadow-2xl sm:max-h-[85vh] sm:max-w-2xl sm:rounded-2xl overflow-hidden opacity-100"
           >
             {/* Top Accent Stripe if colored */}
             {color !== 'default' && (
