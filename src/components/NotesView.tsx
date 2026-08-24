@@ -10,6 +10,7 @@ import {
 import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import NoteCard, { NOTE_COLOR_CONFIG } from '@/components/NoteCard'
 import NoteEditorModal from '@/components/NoteEditorModal'
 import AiNoteModal from '@/components/AiNoteModal'
@@ -304,6 +305,39 @@ export default function NotesView({
                   🏠 Personal
                 </button>
               </div>
+
+              {/* Color Theme Picker */}
+              <Popover>
+                <PopoverTrigger
+                  className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  title="Choose Note Theme Color"
+                >
+                  <Palette className="h-2.5 w-2.5" />
+                  <span>{NOTE_COLOR_CONFIG[quickColor].label.split(' / ')[0]}</span>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-1.5" align="start">
+                  <div className="grid grid-cols-3 gap-1">
+                    {(Object.keys(NOTE_COLOR_CONFIG) as NoteColor[]).map((c) => {
+                      const cfg = NOTE_COLOR_CONFIG[c]
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setQuickColor(c)}
+                          className={cn(
+                            'flex h-7 w-full items-center justify-center rounded-lg border text-[10px] font-medium transition-transform hover:scale-105',
+                            cfg.card,
+                            quickColor === c && 'ring-2 ring-primary'
+                          )}
+                          title={cfg.label}
+                        >
+                          <span className={cn('h-2.5 w-2.5 rounded-full', cfg.border)} />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               {/* Private toggle */}
               <button
