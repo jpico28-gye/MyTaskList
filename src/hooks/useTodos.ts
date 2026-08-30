@@ -5,6 +5,9 @@ import type { User } from '@supabase/supabase-js'
 import { supabase, type TodoRow } from '@/lib/supabase'
 import type { Todo, Priority } from '@/components/TodoItem'
 import type { ReminderMinutes } from '@/lib/reminders'
+export type { Priority } from '@/components/TodoItem'
+export type { ReminderMinutes } from '@/lib/reminders'
+export type SortMode = 'manual' | 'smart'
 
 // ─── mapping helpers ──────────────────────────────────────────────────────────
 
