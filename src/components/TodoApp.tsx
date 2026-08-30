@@ -52,7 +52,7 @@ export default function TodoApp({ auth: propAuth }: TodoAppProps) {
   // Sidebar states
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [bgPreset,          setBgPreset]          = useState<BackgroundPreset>('aurora')
+  const [bgPreset,          setBgPreset]          = useState<BackgroundPreset>('minimal')
 
   const { dark, toggle: toggleDark } = useDarkMode()
   const { permission, requestPermission } = useNotifications(todos, auth.user?.id ?? null)
