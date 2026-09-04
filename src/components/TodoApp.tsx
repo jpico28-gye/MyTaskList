@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Loader2 } from 'lucide-react'
+import AuthGate from '@/components/AuthGate'
 import Sidebar, { type SmartView } from '@/components/Sidebar'
 import AmbientBackground, { type BackgroundPreset } from '@/components/AmbientBackground'
 import UnifiedComposer from '@/components/UnifiedComposer'
@@ -91,7 +92,17 @@ export default function TodoApp({ auth: propAuth }: TodoAppProps) {
 
   const editingNote = typeof editingNoteId === 'string' ? notes.find((n) => n.id === editingNoteId) ?? null : null
 
-  if (!auth.user) return null
+  if (auth.loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!auth.user) {
+    return <AuthGate auth={auth} />
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground transition-colors selection:bg-primary/20 selection:text-primary">
